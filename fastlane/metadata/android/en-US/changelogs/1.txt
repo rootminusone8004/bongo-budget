@@ -1,0 +1,9 @@
+Added
+  - Master overall monthly budget with shrinking available pool
+  - Daily spendable allowance calculations and toggle mode
+  - Category quota constraints and custom category creation
+  - Category transaction inspection bottom sheet
+  - AMOLED pure deep black theme with BDT (৳) currency
+  - Local Room SQLite persistence (100% offline & private)
+  - Dual-mode JSON backup & restore (Merge / Replace)
+  - GitHub Actions automated CI/CD release pipeline

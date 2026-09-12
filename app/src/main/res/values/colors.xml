@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand colors (Deep Orange matching brand icon) -->
+    <color name="primary">#E44919</color>
+    <color name="primary_dark">#BF360C</color>
+    <color name="primary_light">#FF7043</color>
+    <color name="primary_container">#2B1408</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <color name="secondary">#10B981</color>
+    <color name="secondary_dark">#0F766E</color>
+    <color name="secondary_light">#34D399</color>
+    <color name="secondary_container">#0D281E</color>
+
+    <!-- Financial Status Colors (Vibrant on deep black) -->
+    <color name="income_green">#22C55E</color>
+    <color name="income_green_dark">#15803D</color>
+    <color name="income_green_light">#102B1B</color>
+    
+    <color name="expense_red">#EF4444</color>
+    <color name="expense_red_dark">#B91C1C</color>
+    <color name="expense_red_light">#311417</color>
+
+    <color name="warning_amber">#F59E0B</color>
+    <color name="warning_amber_light">#312411</color>
+
+    <!-- Deep Pitch Black & Charcoal Surfaces -->
+    <color name="background_dark">#090A0C</color>
+    <color name="surface_dark">#131418</color>
+    <color name="surface_variant_dark">#1B1D22</color>
+    <color name="surface_elevated_dark">#22242B</color>
+    <color name="card_stroke">#22242B</color>
+
+    <!-- Backward compatibility aliases -->
+    <color name="background_light">#090A0C</color>
+    <color name="surface_light">#131418</color>
+    <color name="surface_variant_light">#1B1D22</color>
+
+    <!-- Typography in Dark Theme -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9E9EA7</color>
+    <color name="text_muted">#65666E</color>
+    <color name="divider">#1F2128</color>
+
+    <!-- Category Accent Colors in Dark Mode -->
+    <color name="cat_food">#FB923C</color>
+    <color name="cat_transport">#38BDF8</color>
+    <color name="cat_groceries">#34D399</color>
+    <color name="cat_shopping">#A78BFA</color>
+    <color name="cat_entertainment">#F472B6</color>
+    <color name="cat_bills">#F87171</color>
+    <color name="cat_health">#2DD4BF</color>
+    <color name="cat_education">#FBBF24</color>
+    <color name="cat_salary">#4ADE80</color>
+    <color name="cat_investment">#818CF8</color>
+    <color name="cat_other">#9E9EA7</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

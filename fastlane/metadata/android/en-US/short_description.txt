@@ -1,0 +1,1 @@
+Offline-first personal finance and category quota management app

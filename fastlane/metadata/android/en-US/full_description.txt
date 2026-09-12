@@ -1,0 +1,10 @@
+Bongo Budget is a sleek, offline-first personal finance and category quota manager for Android. Designed around the Bangladeshi Taka (৳) and built with a pure AMOLED deep black theme, it brings discipline and clarity to your finances.
+
+Features:
+- Master Overall Monthly Budget with live shrinking available pool
+- Daily Spendable Allowance calculations with one-touch toggle
+- Strict Category Quotas to prevent unbudgeted expense leaks
+- Custom Categories with dynamic keyword-based icons and colors
+- Category Drill-down bottom sheet to inspect individual category expenses
+- 100% Offline-First: SQLite Room database on your device with complete privacy
+- Dual-mode JSON backup and restore (Merge or Replace)
