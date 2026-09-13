@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.0] - 13-09-2026
+
+### Changed
+- Edit option fixed
+- Cost bar fixed
+- recent transaction removed
+
 ## [1.0.0] - 12-09-2026
 
 ### Added
@@ -36,9 +43,3 @@ All notable changes to this project are documented in this file.
 - Bottom navigation tab switching bug resolved using synchronous tag-based FragmentManager transactions.
 - CI pipeline keystore decoding robustness across environment variables.
 
-## [1.1.0] - 13-09-2026
-
-### Changed
-- Edit option fixed
-- Cost bar fixed
-- recent transaction removed
