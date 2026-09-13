@@ -35,6 +35,8 @@ public class DailyBudgetCalculatorTest {
         double expectedDaily = remaining / expectedRemainingDays;
         assertEquals(expectedDaily, info.dailySpendable, 0.001);
         assertTrue(info.getDailyFormatted().contains("/ day"));
+        assertFalse(info.getDailyFormattedAmount().contains("/ day"));
+        assertFalse(info.getDailyFormattedAmount().contains("/day"));
     }
 
     @Test
@@ -48,6 +50,7 @@ public class DailyBudgetCalculatorTest {
         assertTrue(info.isOverBudget);
         assertEquals(0.0, info.dailySpendable, 0.001);
         assertEquals(com.budjet.app.util.CurrencyUtils.CURRENCY_SYMBOL + "0.00 / day", info.getDailyFormatted());
+        assertEquals(com.budjet.app.util.CurrencyUtils.CURRENCY_SYMBOL + "0.00", info.getDailyFormattedAmount());
         assertTrue(info.getDailySubtext().contains("exceeded"));
     }
 
@@ -61,5 +64,6 @@ public class DailyBudgetCalculatorTest {
         assertTrue(info.isMonthEnded);
         assertEquals(0, info.remainingDays);
         assertEquals("Month ended", info.getDailyFormatted());
+        assertEquals("Month ended", info.getDailyFormattedAmount());
     }
 }

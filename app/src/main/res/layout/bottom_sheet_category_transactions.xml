@@ -71,6 +71,16 @@
         </LinearLayout>
 
         <ImageButton
+            android:id="@+id/btn_edit_quota"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit Budget Quota"
+            android:src="@drawable/ic_edit"
+            app:tint="@color/text_secondary" />
+
+        <ImageButton
             android:id="@+id/btn_close_sheet"
             android:layout_width="36dp"
             android:layout_height="36dp"

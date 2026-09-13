@@ -8,13 +8,110 @@
     android:orientation="vertical"
     android:paddingBottom="80dp">
 
+    <!-- Scope Selector: That Day / Overall -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="4dp">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggle_scope"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:checkedButton="@id/btn_scope_day"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_scope_day"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="That Day"
+                android:textSize="13sp"
+                app:icon="@drawable/ic_calendar_day" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_scope_overall"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Overall"
+                android:textSize="13sp"
+                app:icon="@drawable/ic_view_agenda" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Day Navigator (visible when "That Day" is selected) -->
+        <LinearLayout
+            android:id="@+id/layout_day_navigator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="6dp"
+            android:paddingBottom="2dp">
+
+            <ImageButton
+                android:id="@+id/btn_prev_day"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Previous Day"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="@color/text_secondary" />
+
+            <LinearLayout
+                android:id="@+id/btn_select_day"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:background="?attr/selectableItemBackground"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="6dp"
+                    android:src="@drawable/ic_calendar_day"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:id="@+id/tv_selected_day"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="Today, 13 Sep 2026" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_next_day"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Next Day"
+                android:src="@drawable/ic_arrow_forward"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+    </LinearLayout>
+
     <!-- Search Box Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_marginEnd="12dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="4dp"
         android:layout_marginBottom="8dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="0dp"
@@ -133,6 +230,7 @@
             app:tint="@color/text_muted" />
 
         <TextView
+            android:id="@+id/tv_empty_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -142,6 +240,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tv_empty_prompt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"

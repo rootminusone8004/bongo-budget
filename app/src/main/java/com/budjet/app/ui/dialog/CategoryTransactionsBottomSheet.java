@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.budjet.app.R;
+import com.budjet.app.data.model.Budget;
 import com.budjet.app.data.model.Category;
 import com.budjet.app.data.model.Transaction;
 import com.budjet.app.databinding.BottomSheetCategoryTransactionsBinding;
@@ -23,10 +24,12 @@ import com.budjet.app.viewmodel.MainViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryTransactionsBottomSheet extends BottomSheetDialogFragment {
 
+    private static final String ARG_BUDGET = "arg_budget";
     private static final String ARG_CATEGORY = "arg_category";
     private static final String ARG_QUOTA_AMOUNT = "arg_quota_amount";
 
@@ -34,8 +37,21 @@ public class CategoryTransactionsBottomSheet extends BottomSheetDialogFragment {
     private MainViewModel viewModel;
     private TransactionAdapter adapter;
 
+    private Budget budget;
     private String category = "";
     private double quotaAmount = 0.0;
+
+    public static CategoryTransactionsBottomSheet newInstance(Budget budget) {
+        CategoryTransactionsBottomSheet fragment = new CategoryTransactionsBottomSheet();
+        Bundle args = new Bundle();
+        if (budget != null) {
+            args.putSerializable(ARG_BUDGET, budget);
+            args.putString(ARG_CATEGORY, budget.getCategory());
+            args.putDouble(ARG_QUOTA_AMOUNT, budget.getAmount());
+        }
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     public static CategoryTransactionsBottomSheet newInstance(String category, double quotaAmount) {
         CategoryTransactionsBottomSheet fragment = new CategoryTransactionsBottomSheet();
@@ -59,6 +75,7 @@ public class CategoryTransactionsBottomSheet extends BottomSheetDialogFragment {
         viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
         if (getArguments() != null) {
+            budget = (Budget) getArguments().getSerializable(ARG_BUDGET);
             category = getArguments().getString(ARG_CATEGORY, "");
             quotaAmount = getArguments().getDouble(ARG_QUOTA_AMOUNT, 0.0);
         }
@@ -84,6 +101,29 @@ public class CategoryTransactionsBottomSheet extends BottomSheetDialogFragment {
         applyExpenseText();
 
         binding.btnCloseSheet.setOnClickListener(v -> dismiss());
+
+        binding.btnEditQuota.setOnClickListener(v -> {
+            dismiss();
+            if (budget != null) {
+                SetBudgetDialog.newInstance(budget, null)
+                        .show(getParentFragmentManager(), "edit_cat_budget");
+            } else {
+                SetBudgetDialog.newInstance(null, category)
+                        .show(getParentFragmentManager(), "set_cat_budget");
+            }
+        });
+
+        // Observe monthly budgets to find budget if not provided in args
+        viewModel.getMonthlyBudgets().observe(getViewLifecycleOwner(), budgets -> {
+            if (budget == null && budgets != null) {
+                for (Budget b : budgets) {
+                    if (b != null && !b.isOverall() && category.equalsIgnoreCase(b.getCategory())) {
+                        budget = b;
+                        break;
+                    }
+                }
+            }
+        });
 
         binding.btnAddExpenseForCategory.setOnClickListener(v -> {
             AddEditTransactionBottomSheet.newInstance(null, category)
@@ -125,7 +165,7 @@ public class CategoryTransactionsBottomSheet extends BottomSheetDialogFragment {
         });
 
         viewModel.getTransactionsForCategory(category).observe(getViewLifecycleOwner(), transactions -> {
-            adapter.submitList(transactions);
+            adapter.submitList(transactions != null ? new ArrayList<>(transactions) : null);
 
             int count = transactions != null ? transactions.size() : 0;
             String monthDisplay = viewModel.getFilterCriteria().getValue() != null ?

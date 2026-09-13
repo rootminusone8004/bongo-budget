@@ -83,4 +83,43 @@ public class ModelTest {
         int randomIcon = com.budjet.app.data.model.Category.getIconResource("My Unique Custom Category");
         assertEquals(R.drawable.ic_category, randomIcon);
     }
+
+    @Test
+    public void testDateUtilsDayRange() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(2026, Calendar.SEPTEMBER, 13, 15, 45, 30);
+
+        long start = DateUtils.getStartOfDay(cal);
+        long end = DateUtils.getEndOfDay(cal);
+
+        assertTrue(start < end);
+
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTimeInMillis(start);
+        assertEquals(13, startCal.get(Calendar.DAY_OF_MONTH));
+        assertEquals(0, startCal.get(Calendar.HOUR_OF_DAY));
+        assertEquals(0, startCal.get(Calendar.MINUTE));
+        assertEquals(0, startCal.get(Calendar.SECOND));
+
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTimeInMillis(end);
+        assertEquals(13, endCal.get(Calendar.DAY_OF_MONTH));
+        assertEquals(23, endCal.get(Calendar.HOUR_OF_DAY));
+        assertEquals(59, endCal.get(Calendar.MINUTE));
+        assertEquals(59, endCal.get(Calendar.SECOND));
+    }
+
+    @Test
+    public void testDateUtilsFormatDayHeader() {
+        Calendar today = Calendar.getInstance();
+        assertTrue(DateUtils.formatDayHeader(today).startsWith("Today, "));
+
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.add(Calendar.DAY_OF_YEAR, -1);
+        assertTrue(DateUtils.formatDayHeader(yesterday).startsWith("Yesterday, "));
+
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        assertTrue(DateUtils.formatDayHeader(tomorrow).startsWith("Tomorrow, "));
+    }
 }

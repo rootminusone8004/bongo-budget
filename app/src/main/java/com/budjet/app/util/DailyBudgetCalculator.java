@@ -40,6 +40,16 @@ public class DailyBudgetCalculator {
             return CurrencyUtils.formatAmount(dailySpendable) + " / day";
         }
 
+        public String getDailyFormattedAmount() {
+            if (isMonthEnded) {
+                return "Month ended";
+            }
+            if (isOverBudget) {
+                return CurrencyUtils.CURRENCY_SYMBOL + "0.00";
+            }
+            return CurrencyUtils.formatAmount(dailySpendable);
+        }
+
         public String getDailySubtext() {
             if (isMonthEnded) {
                 return "Final average: " + CurrencyUtils.formatAmount(totalDaysInMonth > 0 ? spent / totalDaysInMonth : 0) + "/day";

@@ -25,7 +25,10 @@ import com.budjet.app.viewmodel.MainViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class SetBudgetDialog extends DialogFragment {
 
@@ -155,6 +158,9 @@ public class SetBudgetDialog extends DialogFragment {
 
         viewModel.getMonthlyBudgets().observe(this, budgets -> {
             currentBudgetsList = budgets != null ? budgets : new ArrayList<>();
+            if (!isOverallMode) {
+                setupCategoriesDropdown();
+            }
             updateAllocationUI();
         });
 
@@ -179,23 +185,41 @@ public class SetBudgetDialog extends DialogFragment {
     private void setupCategoriesDropdown() {
         List<String> options = new ArrayList<>();
 
-        // Add preset candidate categories
+        // Set of categories that already have a budget in the current month
+        Set<String> alreadyBudgetedCategories = new HashSet<>();
+        if (currentBudgetsList != null) {
+            for (Budget b : currentBudgetsList) {
+                if (b != null && !b.isOverall() && b.getCategory() != null) {
+                    // When editing an existing budget, do not exclude its own category
+                    if (existingBudget != null && existingBudget.getId() == b.getId()) {
+                        continue;
+                    }
+                    alreadyBudgetedCategories.add(b.getCategory().trim().toLowerCase(Locale.ROOT));
+                }
+            }
+        }
+
+        // Add preset candidate categories that are NOT already budgeted
         for (String preset : Category.EXPENSE_PRESET_CANDIDATES) {
-            if (!options.contains(preset) && !Budget.CATEGORY_OVERALL.equalsIgnoreCase(preset)) {
+            if (!alreadyBudgetedCategories.contains(preset.trim().toLowerCase(Locale.ROOT))
+                    && !options.contains(preset)
+                    && !Budget.CATEGORY_OVERALL.equalsIgnoreCase(preset)) {
                 options.add(preset);
             }
         }
 
-        // Add previously created custom categories
+        // Add previously created custom categories that are NOT already budgeted
         if (allCreatedCategoriesList != null) {
             for (String cat : allCreatedCategoriesList) {
-                if (!options.contains(cat) && !Budget.CATEGORY_OVERALL.equalsIgnoreCase(cat)) {
+                if (!alreadyBudgetedCategories.contains(cat.trim().toLowerCase(Locale.ROOT))
+                        && !options.contains(cat)
+                        && !Budget.CATEGORY_OVERALL.equalsIgnoreCase(cat)) {
                     options.add(cat);
                 }
             }
         }
 
-        // If editing an existing category budget, make sure it's in the list
+        // If editing an existing category budget, make sure its category is included
         if (existingBudget != null && !existingBudget.isOverall()) {
             String existingCat = existingBudget.getCategory();
             if (!options.contains(existingCat)) {
@@ -216,12 +240,28 @@ public class SetBudgetDialog extends DialogFragment {
         if (existingBudget != null && !existingBudget.isOverall()) {
             binding.actBudgetCategory.setText(existingBudget.getCategory(), false);
             binding.tilCustomCategory.setVisibility(View.GONE);
-        } else if (defaultCategory != null && !Budget.CATEGORY_OVERALL.equalsIgnoreCase(defaultCategory)) {
+        } else if (defaultCategory != null && !Budget.CATEGORY_OVERALL.equalsIgnoreCase(defaultCategory) && options.contains(defaultCategory)) {
             binding.actBudgetCategory.setText(defaultCategory, false);
             binding.tilCustomCategory.setVisibility(View.GONE);
-        } else if (binding.actBudgetCategory.getText().toString().isEmpty() && !options.isEmpty()) {
-            binding.actBudgetCategory.setText(options.get(0), false);
-            binding.tilCustomCategory.setVisibility(View.GONE);
+        } else {
+            String currentText = binding.actBudgetCategory.getText() != null ?
+                    binding.actBudgetCategory.getText().toString().trim() : "";
+            if (!currentText.isEmpty() && options.contains(currentText)) {
+                binding.actBudgetCategory.setText(currentText, false);
+                if (Category.CUSTOM_CATEGORY_OPTION.equals(currentText)) {
+                    binding.tilCustomCategory.setVisibility(View.VISIBLE);
+                } else {
+                    binding.tilCustomCategory.setVisibility(View.GONE);
+                }
+            } else if (!options.isEmpty()) {
+                String first = options.get(0);
+                binding.actBudgetCategory.setText(first, false);
+                if (Category.CUSTOM_CATEGORY_OPTION.equals(first)) {
+                    binding.tilCustomCategory.setVisibility(View.VISIBLE);
+                } else {
+                    binding.tilCustomCategory.setVisibility(View.GONE);
+                }
+            }
         }
     }
 
@@ -370,6 +410,16 @@ public class SetBudgetDialog extends DialogFragment {
                 if (Budget.CATEGORY_OVERALL.equalsIgnoreCase(category)) {
                     binding.tilCustomCategory.setError("Category cannot be named OVERALL");
                     return;
+                }
+                if (currentBudgetsList != null) {
+                    for (Budget b : currentBudgetsList) {
+                        if (b != null && !b.isOverall() && category.equalsIgnoreCase(b.getCategory())) {
+                            if (existingBudget == null || existingBudget.getId() != b.getId()) {
+                                binding.tilCustomCategory.setError("A budget quota for \"" + category + "\" already exists");
+                                return;
+                            }
+                        }
+                    }
                 }
                 binding.tilCustomCategory.setError(null);
             } else {

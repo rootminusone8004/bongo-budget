@@ -15,23 +15,22 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.budjet.app.R;
 import com.budjet.app.data.model.Budget;
+import com.budjet.app.data.model.CategorySpending;
 import com.budjet.app.data.model.Transaction;
 import com.budjet.app.databinding.FragmentDashboardBinding;
-import com.budjet.app.ui.MainActivity;
 import com.budjet.app.ui.adapter.CategorySpendingAdapter;
-import com.budjet.app.ui.adapter.TransactionAdapter;
-import com.budjet.app.ui.dialog.AddEditTransactionBottomSheet;
 import com.budjet.app.ui.dialog.CategoryTransactionsBottomSheet;
 import com.budjet.app.ui.dialog.SetBudgetDialog;
 import com.budjet.app.util.BudgetAllocationCalculator;
 import com.budjet.app.util.CurrencyUtils;
 import com.budjet.app.util.DailyBudgetCalculator;
 import com.budjet.app.viewmodel.MainViewModel;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DashboardFragment extends Fragment {
 
@@ -39,13 +38,15 @@ public class DashboardFragment extends Fragment {
     private MainViewModel viewModel;
 
     private CategorySpendingAdapter categorySpendingAdapter;
-    private TransactionAdapter recentTransactionsAdapter;
 
     private double currentIncome = 0.0;
     private double currentExpense = 0.0;
     private Budget currentOverallBudget = null;
     private List<Budget> currentMonthlyBudgets = new ArrayList<>();
     private boolean isBudgetDailyMode = false;
+    private boolean isCategoryDailyMode = true; // Daily remaining by default
+    private Map<String, Double> todaySpentMap = new HashMap<>();
+    private List<CategorySpending> currentCategorySpendingList = new ArrayList<>();
     private Calendar currentCalendar = Calendar.getInstance();
 
     @Nullable
@@ -82,28 +83,6 @@ public class DashboardFragment extends Fragment {
         });
         binding.rvCategorySpending.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvCategorySpending.setAdapter(categorySpendingAdapter);
-
-        // Recent Transactions
-        recentTransactionsAdapter = new TransactionAdapter(new TransactionAdapter.OnTransactionClickListener() {
-            @Override
-            public void onTransactionClick(Transaction transaction) {
-                AddEditTransactionBottomSheet.newInstance(transaction)
-                        .show(getChildFragmentManager(), "edit_tx");
-            }
-
-            @Override
-            public void onTransactionEdit(Transaction transaction) {
-                AddEditTransactionBottomSheet.newInstance(transaction)
-                        .show(getChildFragmentManager(), "edit_tx");
-            }
-
-            @Override
-            public void onTransactionDelete(Transaction transaction) {
-                confirmDeleteTransaction(transaction);
-            }
-        });
-        binding.rvRecentTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.rvRecentTransactions.setAdapter(recentTransactionsAdapter);
     }
 
     private void setupClickListeners() {
@@ -124,10 +103,10 @@ public class DashboardFragment extends Fragment {
             updateOverallBudget();
         });
 
-        binding.btnViewAllTransactions.setOnClickListener(v -> {
-            if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).navigateToTab(R.id.navigation_transactions);
-            }
+        binding.btnToggleCategorySpending.setOnClickListener(v -> {
+            isCategoryDailyMode = !isCategoryDailyMode;
+            binding.btnToggleCategorySpending.setText(isCategoryDailyMode ? "Daily" : "Total");
+            updateCategorySpending();
         });
     }
 
@@ -136,6 +115,7 @@ public class DashboardFragment extends Fragment {
             currentCalendar = viewModel.getCurrentCalendar();
             updateOverallBudget();
             updateBalance();
+            updateCategorySpending();
         });
 
         // Income
@@ -151,18 +131,19 @@ public class DashboardFragment extends Fragment {
             binding.tvTotalExpense.setText("-" + CurrencyUtils.formatAmount(currentExpense));
             updateBalance();
             updateOverallBudget();
+            updateCategorySpending();
         });
 
         // Category Spending breakdown
         viewModel.getCategorySpending().observe(getViewLifecycleOwner(), list -> {
-            if (list == null || list.isEmpty()) {
-                binding.rvCategorySpending.setVisibility(View.GONE);
-                binding.tvNoCategorySpending.setVisibility(View.VISIBLE);
-            } else {
-                binding.rvCategorySpending.setVisibility(View.VISIBLE);
-                binding.tvNoCategorySpending.setVisibility(View.GONE);
-                categorySpendingAdapter.setData(list, currentExpense);
-            }
+            currentCategorySpendingList = list != null ? list : new ArrayList<>();
+            updateCategorySpending();
+        });
+
+        // Monthly transactions (to calculate today's spending per category reliably)
+        viewModel.getMonthlyTransactions().observe(getViewLifecycleOwner(), transactions -> {
+            calculateTodaySpentMap(transactions);
+            updateCategorySpending();
         });
 
         // Overall Budget
@@ -172,24 +153,63 @@ public class DashboardFragment extends Fragment {
             updateBalance();
         });
 
-        // Monthly Budgets (for allocation pool)
+        // Monthly Budgets (for allocation pool and category quotas)
         viewModel.getMonthlyBudgets().observe(getViewLifecycleOwner(), budgets -> {
             currentMonthlyBudgets = budgets != null ? budgets : new ArrayList<>();
             updateOverallBudget();
             updateBalance();
+            updateCategorySpending();
         });
+    }
 
-        // Recent Transactions
-        viewModel.getRecentTransactions().observe(getViewLifecycleOwner(), transactions -> {
-            if (transactions == null || transactions.isEmpty()) {
-                binding.rvRecentTransactions.setVisibility(View.GONE);
-                binding.tvNoRecentTransactions.setVisibility(View.VISIBLE);
-            } else {
-                binding.rvRecentTransactions.setVisibility(View.VISIBLE);
-                binding.tvNoRecentTransactions.setVisibility(View.GONE);
-                recentTransactionsAdapter.submitList(transactions);
+    private void calculateTodaySpentMap(List<Transaction> transactions) {
+        Calendar todayCal = Calendar.getInstance();
+        todayCal.set(Calendar.HOUR_OF_DAY, 0);
+        todayCal.set(Calendar.MINUTE, 0);
+        todayCal.set(Calendar.SECOND, 0);
+        todayCal.set(Calendar.MILLISECOND, 0);
+        long startOfToday = todayCal.getTimeInMillis();
+
+        todayCal.set(Calendar.HOUR_OF_DAY, 23);
+        todayCal.set(Calendar.MINUTE, 59);
+        todayCal.set(Calendar.SECOND, 59);
+        todayCal.set(Calendar.MILLISECOND, 999);
+        long endOfToday = todayCal.getTimeInMillis();
+
+        Map<String, Double> map = new HashMap<>();
+        if (transactions != null) {
+            for (Transaction t : transactions) {
+                if (t != null && "EXPENSE".equalsIgnoreCase(t.getType())) {
+                    long d = t.getDate();
+                    if (d >= startOfToday && d <= endOfToday) {
+                        String cat = t.getCategory();
+                        map.put(cat, map.getOrDefault(cat, 0.0) + t.getAmount());
+                    }
+                }
             }
-        });
+        }
+        this.todaySpentMap = map;
+    }
+
+    private void updateCategorySpending() {
+        if (currentCategorySpendingList == null || currentCategorySpendingList.isEmpty()) {
+            binding.rvCategorySpending.setVisibility(View.GONE);
+            binding.tvNoCategorySpending.setVisibility(View.VISIBLE);
+            binding.btnToggleCategorySpending.setVisibility(View.GONE);
+        } else {
+            binding.rvCategorySpending.setVisibility(View.VISIBLE);
+            binding.tvNoCategorySpending.setVisibility(View.GONE);
+            binding.btnToggleCategorySpending.setVisibility(View.VISIBLE);
+            binding.btnToggleCategorySpending.setText(isCategoryDailyMode ? "Daily" : "Total");
+            categorySpendingAdapter.setData(
+                    currentCategorySpendingList,
+                    currentMonthlyBudgets,
+                    todaySpentMap,
+                    currentExpense,
+                    currentCalendar,
+                    isCategoryDailyMode
+            );
+        }
     }
 
     private void updateBalance() {
@@ -264,7 +284,7 @@ public class DashboardFragment extends Fragment {
             DailyBudgetCalculator.DailyBudgetInfo dailyInfo = DailyBudgetCalculator.calculate(
                     limit, currentExpense, currentCalendar
             );
-            binding.tvDashboardDailySpendable.setText(dailyInfo.getDailyFormatted());
+            binding.tvDashboardDailySpendable.setText(dailyInfo.getDailyFormattedAmount());
             binding.tvDashboardDailyDetails.setText(dailyInfo.getDailySubtext());
 
             if (dailyInfo.isOverBudget) {
@@ -287,15 +307,6 @@ public class DashboardFragment extends Fragment {
                 binding.btnToggleDashboardBudget.setIconResource(R.drawable.ic_swap_horiz);
             }
         }
-    }
-
-    private void confirmDeleteTransaction(Transaction transaction) {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.confirm_delete_title)
-                .setMessage("Delete \"" + transaction.getTitle() + "\" (" + CurrencyUtils.formatAmount(transaction.getAmount()) + ")?")
-                .setPositiveButton(R.string.delete, (dialog, which) -> viewModel.deleteTransaction(transaction))
-                .setNegativeButton(R.string.cancel, null)
-                .show();
     }
 
     @Override

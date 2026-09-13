@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
                         .show();
                 return;
             }
-            AddEditTransactionBottomSheet.newInstance(null)
+            AddEditTransactionBottomSheet.newInstance(null, null, viewModel.getSelectedDayTimestamp())
                     .show(getSupportFragmentManager(), "add_tx_dialog");
         });
     }

@@ -22,6 +22,9 @@ import java.util.List;
 
 public class MainViewModel extends AndroidViewModel {
 
+    public static final int SCOPE_THAT_DAY = 0;
+    public static final int SCOPE_OVERALL = 1;
+
     public static class FilterCriteria {
         public final long startDate;
         public final long endDate;
@@ -40,6 +43,24 @@ public class MainViewModel extends AndroidViewModel {
         }
     }
 
+    public static class TransactionFilterCriteria {
+        public final long startDate;
+        public final long endDate;
+        public final String type;
+        public final String query;
+        public final int scopeMode;
+        public final Calendar selectedDay;
+
+        public TransactionFilterCriteria(long startDate, long endDate, String type, String query, int scopeMode, Calendar selectedDay) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+            this.type = type;
+            this.query = query;
+            this.scopeMode = scopeMode;
+            this.selectedDay = selectedDay != null ? (Calendar) selectedDay.clone() : Calendar.getInstance();
+        }
+    }
+
     private final BudgetRepository repository;
 
     private final Calendar currentCalendar;
@@ -47,9 +68,14 @@ public class MainViewModel extends AndroidViewModel {
     private final MutableLiveData<String> filterTypeLiveData = new MutableLiveData<>("ALL");
     private final MutableLiveData<String> searchQueryLiveData = new MutableLiveData<>("");
 
+    private final MutableLiveData<Integer> transactionScopeModeLiveData = new MutableLiveData<>(SCOPE_THAT_DAY);
+    private final MutableLiveData<Calendar> selectedDayLiveData = new MutableLiveData<>();
+    private final MutableLiveData<TransactionFilterCriteria> transactionFilterCriteriaLiveData = new MutableLiveData<>();
+
     private final MutableLiveData<FilterCriteria> filterCriteriaLiveData = new MutableLiveData<>();
 
     private final LiveData<List<Transaction>> filteredTransactions;
+    private final LiveData<List<Transaction>> monthlyTransactions;
     private final LiveData<List<Transaction>> recentTransactions;
     private final LiveData<Double> monthlyIncome;
     private final LiveData<Double> monthlyExpense;
@@ -67,9 +93,14 @@ public class MainViewModel extends AndroidViewModel {
 
         this.currentCalendar = Calendar.getInstance();
         this.calendarLiveData.setValue(currentCalendar);
+        this.selectedDayLiveData.setValue(Calendar.getInstance());
 
-        this.filteredTransactions = Transformations.switchMap(filterCriteriaLiveData, criteria ->
+        this.filteredTransactions = Transformations.switchMap(transactionFilterCriteriaLiveData, criteria ->
                 repository.getFilteredTransactions(criteria.startDate, criteria.endDate, criteria.type, criteria.query)
+        );
+
+        this.monthlyTransactions = Transformations.switchMap(filterCriteriaLiveData, criteria ->
+                repository.getTransactionsBetween(criteria.startDate, criteria.endDate)
         );
 
         this.recentTransactions = repository.getRecentTransactions(5);
@@ -108,25 +139,66 @@ public class MainViewModel extends AndroidViewModel {
         String display = DateUtils.formatMonthYear(currentCalendar);
 
         filterCriteriaLiveData.setValue(new FilterCriteria(start, end, type, query, key, display));
+        updateTransactionFilterCriteria();
+    }
+
+    private void updateTransactionFilterCriteria() {
+        int scope = transactionScopeModeLiveData.getValue() != null ? transactionScopeModeLiveData.getValue() : SCOPE_THAT_DAY;
+        String type = filterTypeLiveData.getValue() != null ? filterTypeLiveData.getValue() : "ALL";
+        String query = searchQueryLiveData.getValue() != null ? searchQueryLiveData.getValue() : "";
+        Calendar day = selectedDayLiveData.getValue() != null ? selectedDayLiveData.getValue() : Calendar.getInstance();
+
+        long start;
+        long end;
+
+        if (scope == SCOPE_THAT_DAY) {
+            start = DateUtils.getStartOfDay(day);
+            end = DateUtils.getEndOfDay(day);
+        } else {
+            start = DateUtils.getStartOfMonth(currentCalendar);
+            end = DateUtils.getEndOfMonth(currentCalendar);
+        }
+
+        transactionFilterCriteriaLiveData.setValue(
+                new TransactionFilterCriteria(start, end, type, query, scope, day)
+        );
     }
 
     // Date navigation
     public void nextMonth() {
         currentCalendar.add(Calendar.MONTH, 1);
         calendarLiveData.setValue(currentCalendar);
+        syncSelectedDayWithCurrentMonth();
         updateFilterCriteria();
     }
 
     public void previousMonth() {
         currentCalendar.add(Calendar.MONTH, -1);
         calendarLiveData.setValue(currentCalendar);
+        syncSelectedDayWithCurrentMonth();
         updateFilterCriteria();
     }
 
     public void setCurrentMonth() {
         currentCalendar.setTimeInMillis(System.currentTimeMillis());
         calendarLiveData.setValue(currentCalendar);
+        selectedDayLiveData.setValue(Calendar.getInstance());
         updateFilterCriteria();
+    }
+
+    private void syncSelectedDayWithCurrentMonth() {
+        Calendar today = Calendar.getInstance();
+        if (today.get(Calendar.YEAR) == currentCalendar.get(Calendar.YEAR) &&
+                today.get(Calendar.MONTH) == currentCalendar.get(Calendar.MONTH)) {
+            selectedDayLiveData.setValue(today);
+        } else {
+            Calendar day = (Calendar) currentCalendar.clone();
+            Calendar currentSelected = selectedDayLiveData.getValue();
+            int currentDayOfMonth = currentSelected != null ? currentSelected.get(Calendar.DAY_OF_MONTH) : 1;
+            int maxDays = day.getActualMaximum(Calendar.DAY_OF_MONTH);
+            day.set(Calendar.DAY_OF_MONTH, Math.min(currentDayOfMonth, maxDays));
+            selectedDayLiveData.setValue(day);
+        }
     }
 
     public Calendar getCurrentCalendar() {
@@ -148,6 +220,67 @@ public class MainViewModel extends AndroidViewModel {
         updateFilterCriteria();
     }
 
+    // Getters and Setters for Transaction Scope & Day Navigation
+    public void setTransactionScopeMode(int mode) {
+        transactionScopeModeLiveData.setValue(mode);
+        updateTransactionFilterCriteria();
+    }
+
+    public LiveData<Integer> getTransactionScopeMode() {
+        return transactionScopeModeLiveData;
+    }
+
+    public void setSelectedDay(Calendar calendar) {
+        if (calendar == null) return;
+        Calendar copy = (Calendar) calendar.clone();
+        selectedDayLiveData.setValue(copy);
+        // If the selected day is in a different month, sync currentCalendar as well
+        if (copy.get(Calendar.YEAR) != currentCalendar.get(Calendar.YEAR) ||
+                copy.get(Calendar.MONTH) != currentCalendar.get(Calendar.MONTH)) {
+            currentCalendar.set(Calendar.YEAR, copy.get(Calendar.YEAR));
+            currentCalendar.set(Calendar.MONTH, copy.get(Calendar.MONTH));
+            calendarLiveData.setValue(currentCalendar);
+            updateFilterCriteria();
+        } else {
+            updateTransactionFilterCriteria();
+        }
+    }
+
+    public void nextDay() {
+        Calendar day = selectedDayLiveData.getValue() != null ?
+                (Calendar) selectedDayLiveData.getValue().clone() : Calendar.getInstance();
+        day.add(Calendar.DAY_OF_MONTH, 1);
+        setSelectedDay(day);
+    }
+
+    public void previousDay() {
+        Calendar day = selectedDayLiveData.getValue() != null ?
+                (Calendar) selectedDayLiveData.getValue().clone() : Calendar.getInstance();
+        day.add(Calendar.DAY_OF_MONTH, -1);
+        setSelectedDay(day);
+    }
+
+    public void setToday() {
+        setSelectedDay(Calendar.getInstance());
+    }
+
+    public LiveData<Calendar> getSelectedDayLiveData() {
+        return selectedDayLiveData;
+    }
+
+    public Calendar getSelectedDayCalendar() {
+        return selectedDayLiveData.getValue() != null ?
+                (Calendar) selectedDayLiveData.getValue().clone() : Calendar.getInstance();
+    }
+
+    public long getSelectedDayTimestamp() {
+        return getSelectedDayCalendar().getTimeInMillis();
+    }
+
+    public LiveData<TransactionFilterCriteria> getTransactionFilterCriteria() {
+        return transactionFilterCriteriaLiveData;
+    }
+
     // Getters for LiveData
     public LiveData<FilterCriteria> getFilterCriteria() {
         return filterCriteriaLiveData;
@@ -155,6 +288,10 @@ public class MainViewModel extends AndroidViewModel {
 
     public LiveData<List<Transaction>> getFilteredTransactions() {
         return filteredTransactions;
+    }
+
+    public LiveData<List<Transaction>> getMonthlyTransactions() {
+        return monthlyTransactions;
     }
 
     public LiveData<List<Transaction>> getRecentTransactions() {

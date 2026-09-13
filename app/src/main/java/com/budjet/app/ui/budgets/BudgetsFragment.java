@@ -77,7 +77,7 @@ public class BudgetsFragment extends Fragment {
 
             @Override
             public void onBudgetClick(Budget budget) {
-                CategoryTransactionsBottomSheet.newInstance(budget.getCategory(), budget.getAmount())
+                CategoryTransactionsBottomSheet.newInstance(budget)
                         .show(getChildFragmentManager(), "cat_transactions");
             }
         });

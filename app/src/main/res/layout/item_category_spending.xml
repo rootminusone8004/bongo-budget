@@ -36,25 +36,56 @@
                 app:tint="@color/primary" />
         </FrameLayout>
 
-        <TextView
-            android:id="@+id/tv_category_title"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            tools:text="Groceries (4)" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tv_category_amount"
+            <TextView
+                android:id="@+id/tv_category_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Groceries (4)" />
+
+            <TextView
+                android:id="@+id/tv_category_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                tools:text="Spent: ৳1,850 of ৳6,000" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            tools:text="$340.50" />
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_category_amount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/income_green"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="৳197.62" />
+
+            <TextView
+                android:id="@+id/tv_category_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/income_green"
+                android:textSize="11sp"
+                tools:text="Daily remaining" />
+        </LinearLayout>
     </LinearLayout>
 
     <com.google.android.material.progressindicator.LinearProgressIndicator

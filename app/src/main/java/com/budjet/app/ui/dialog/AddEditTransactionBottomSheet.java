@@ -40,11 +40,17 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
     private String selectedType = Transaction.TYPE_EXPENSE;
     private List<String> createdExpenseCategories = new ArrayList<>();
 
+    public static final String ARG_DEFAULT_DATE = "arg_default_date";
+
     public static AddEditTransactionBottomSheet newInstance(@Nullable Transaction transaction) {
-        return newInstance(transaction, null);
+        return newInstance(transaction, null, 0);
     }
 
     public static AddEditTransactionBottomSheet newInstance(@Nullable Transaction transaction, @Nullable String defaultCategory) {
+        return newInstance(transaction, defaultCategory, 0);
+    }
+
+    public static AddEditTransactionBottomSheet newInstance(@Nullable Transaction transaction, @Nullable String defaultCategory, long defaultDate) {
         AddEditTransactionBottomSheet fragment = new AddEditTransactionBottomSheet();
         Bundle args = new Bundle();
         if (transaction != null) {
@@ -52,6 +58,9 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
         }
         if (defaultCategory != null) {
             args.putString(ARG_DEFAULT_CATEGORY, defaultCategory);
+        }
+        if (defaultDate > 0) {
+            args.putLong(ARG_DEFAULT_DATE, defaultDate);
         }
         fragment.setArguments(args);
         return fragment;
@@ -72,6 +81,10 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
         if (getArguments() != null) {
             existingTransaction = (Transaction) getArguments().getSerializable(ARG_TRANSACTION);
             defaultCategory = getArguments().getString(ARG_DEFAULT_CATEGORY);
+            long defDate = getArguments().getLong(ARG_DEFAULT_DATE, 0);
+            if (defDate > 0 && existingTransaction == null) {
+                selectedDate.setTimeInMillis(defDate);
+            }
         }
 
         setupTypeToggle();
@@ -163,12 +176,12 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
         String currentText = binding.actCategory.getText() != null ?
                 binding.actCategory.getText().toString().trim() : "";
 
-        if (existingTransaction != null && categories.contains(existingTransaction.getCategory())) {
+        if (!currentText.isEmpty() && categories.contains(currentText)) {
+            binding.actCategory.setText(currentText, false);
+        } else if (existingTransaction != null && categories.contains(existingTransaction.getCategory())) {
             binding.actCategory.setText(existingTransaction.getCategory(), false);
         } else if (defaultCategory != null && categories.contains(defaultCategory)) {
             binding.actCategory.setText(defaultCategory, false);
-        } else if (!currentText.isEmpty() && categories.contains(currentText)) {
-            binding.actCategory.setText(currentText, false);
         } else if (!categories.isEmpty()) {
             binding.actCategory.setText(categories.get(0), false);
         } else {
@@ -202,7 +215,10 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void populateExistingData() {
-        binding.etAmount.setText(String.valueOf(existingTransaction.getAmount()));
+        double amt = existingTransaction.getAmount();
+        String amtStr = (amt == Math.floor(amt) && !Double.isInfinite(amt)) ?
+                String.valueOf((long) amt) : String.valueOf(amt);
+        binding.etAmount.setText(amtStr);
         binding.etTitle.setText(existingTransaction.getTitle());
         selectedDate.setTimeInMillis(existingTransaction.getDate());
         updateDateDisplay();
@@ -273,13 +289,16 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
         binding.tilCategory.setError(null);
 
         if (existingTransaction != null) {
-            existingTransaction.setTitle(title);
-            existingTransaction.setAmount(amount);
-            existingTransaction.setType(selectedType);
-            existingTransaction.setCategory(category);
-            existingTransaction.setDate(selectedDate.getTimeInMillis());
-            existingTransaction.setNote(note);
-            viewModel.updateTransaction(existingTransaction);
+            Transaction updatedTx = new Transaction(
+                    existingTransaction.getId(),
+                    title,
+                    amount,
+                    selectedType,
+                    category,
+                    selectedDate.getTimeInMillis(),
+                    note
+            );
+            viewModel.updateTransaction(updatedTx);
         } else {
             Transaction newTx = new Transaction(title, amount, selectedType, category, selectedDate.getTimeInMillis(), note);
             viewModel.addTransaction(newTx);
