@@ -195,9 +195,12 @@ public class BudgetRepository {
                 List<Transaction> transactions = data.getTransactions();
                 if (transactions != null && !transactions.isEmpty()) {
                     List<Transaction> toInsert = new ArrayList<>();
+                    long fallbackTimestamp = System.currentTimeMillis();
                     for (Transaction t : transactions) {
+                        // Backward compatibility: if date is 0 (missing from old JSON), use current time
+                        long txDate = t.getDate() > 0 ? t.getDate() : fallbackTimestamp;
                         // Reset ID so database generates new auto-increment ID to prevent collisions
-                        toInsert.add(new Transaction(t.getTitle(), t.getAmount(), t.getType(), t.getCategory(), t.getDate(), t.getNote()));
+                        toInsert.add(new Transaction(t.getTitle(), t.getAmount(), t.getType(), t.getCategory(), txDate, t.getNote()));
                     }
                     transactionDao.insertAll(toInsert);
                 }

@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.0] - 18-09-2026
+
+### Added
+- Block future date navigation in transactions and remove Date field from Add Transaction
+- Hide 3-dot menu on non-editable transactions and use inline date error
+- Add transaction timestamps, today-only edit/delete, and JSON backward compatibility
+
 ## [1.1.0] - 13-09-2026
 
 ### Changed

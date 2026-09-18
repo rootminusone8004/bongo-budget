@@ -139,18 +139,21 @@ public class CategoryTransactionsBottomSheet extends BottomSheetDialogFragment {
         adapter = new TransactionAdapter(new TransactionAdapter.OnTransactionClickListener() {
             @Override
             public void onTransactionClick(Transaction transaction) {
+                // TransactionAdapter already enforces today-only clicks
                 AddEditTransactionBottomSheet.newInstance(transaction)
                         .show(getParentFragmentManager(), "edit_tx");
             }
 
             @Override
             public void onTransactionEdit(Transaction transaction) {
+                // TransactionAdapter already enforces today-only edits
                 AddEditTransactionBottomSheet.newInstance(transaction)
                         .show(getParentFragmentManager(), "edit_tx");
             }
 
             @Override
             public void onTransactionDelete(Transaction transaction) {
+                // TransactionAdapter already enforces today-only deletes
                 confirmDeleteTransaction(transaction);
             }
         });

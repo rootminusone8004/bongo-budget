@@ -1,0 +1,5 @@
+Added
+  - Block future date navigation in transactions and remove Date field from Add Transaction.
+  - Hide 3-dot menu on non-editable transactions and use inline date error.
+  - Add transaction timestamps, today-only edit/delete, and JSON backward compatibility.
+

@@ -104,8 +104,9 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
             populateExistingData();
         } else {
             binding.tvSheetTitle.setText(R.string.add_transaction);
-            updateDateDisplay();
+            selectedDate.setTimeInMillis(System.currentTimeMillis());
         }
+        binding.tilDate.setVisibility(View.GONE);
 
         binding.btnCancelTransaction.setOnClickListener(v -> dismiss());
         binding.btnSaveTransaction.setOnClickListener(v -> saveTransaction());
@@ -201,17 +202,21 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
                     selectedDate.set(Calendar.YEAR, year);
                     selectedDate.set(Calendar.MONTH, month);
                     selectedDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    // Preserve current time of day (don't reset to midnight)
+                    binding.tilDate.setError(null);
                     updateDateDisplay();
                 },
                 selectedDate.get(Calendar.YEAR),
                 selectedDate.get(Calendar.MONTH),
                 selectedDate.get(Calendar.DAY_OF_MONTH)
         );
+        // Prevent selecting future dates
+        dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
         dialog.show();
     }
 
     private void updateDateDisplay() {
-        binding.etDate.setText(DateUtils.formatDate(selectedDate.getTimeInMillis()));
+        binding.etDate.setText(DateUtils.formatDateTime(selectedDate.getTimeInMillis()));
     }
 
     private void populateExistingData() {
@@ -288,6 +293,22 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
         }
         binding.tilCategory.setError(null);
 
+        long transactionTimestamp;
+        if (existingTransaction != null) {
+            // Editing: preserve original transaction date/time
+            transactionTimestamp = existingTransaction.getDate();
+        } else {
+            // New transaction: current wall-clock time
+            transactionTimestamp = System.currentTimeMillis();
+        }
+
+        // Safety check: reject future timestamps
+        if (transactionTimestamp > System.currentTimeMillis()) {
+            binding.tilDate.setError("Cannot create transactions in the future");
+            return;
+        }
+        binding.tilDate.setError(null);
+
         if (existingTransaction != null) {
             Transaction updatedTx = new Transaction(
                     existingTransaction.getId(),
@@ -295,12 +316,12 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
                     amount,
                     selectedType,
                     category,
-                    selectedDate.getTimeInMillis(),
+                    transactionTimestamp,
                     note
             );
             viewModel.updateTransaction(updatedTx);
         } else {
-            Transaction newTx = new Transaction(title, amount, selectedType, category, selectedDate.getTimeInMillis(), note);
+            Transaction newTx = new Transaction(title, amount, selectedType, category, transactionTimestamp, note);
             viewModel.addTransaction(newTx);
         }
 

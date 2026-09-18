@@ -122,4 +122,53 @@ public class ModelTest {
         tomorrow.add(Calendar.DAY_OF_YEAR, 1);
         assertTrue(DateUtils.formatDayHeader(tomorrow).startsWith("Tomorrow, "));
     }
+
+    @Test
+    public void testDateUtilsIsToday() {
+        // Current time should be today
+        assertTrue(DateUtils.isToday(System.currentTimeMillis()));
+
+        // A timestamp from yesterday should not be today
+        long yesterday = System.currentTimeMillis() - (24L * 60 * 60 * 1000);
+        assertFalse(DateUtils.isToday(yesterday));
+
+        // A timestamp far in the past should not be today
+        assertFalse(DateUtils.isToday(1000000000000L)); // Sept 2001
+    }
+
+    @Test
+    public void testDateUtilsFormatDateTime() {
+        // Should contain both date and time parts
+        String formatted = DateUtils.formatDateTime(System.currentTimeMillis());
+        assertTrue(formatted.contains("•")); // separator between date and time
+        // Should contain AM or PM
+        assertTrue(formatted.contains("AM") || formatted.contains("PM"));
+    }
+
+    @Test
+    public void testTransactionWithZeroDateBackwardCompat() {
+        // Simulates an imported transaction with missing date (defaults to 0)
+        Transaction tx = new Transaction("Old Import", 100.0, Transaction.TYPE_EXPENSE, "Food & Dining", 0, "Legacy");
+        assertEquals(0, tx.getDate());
+        // Verify isToday returns false for epoch zero
+        assertFalse(DateUtils.isToday(0));
+    }
+
+    @Test
+    public void testDateUtilsIsFutureDay() {
+        Calendar today = Calendar.getInstance();
+        assertFalse(DateUtils.isFutureDay(today));
+
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.add(Calendar.DAY_OF_YEAR, -1);
+        assertFalse(DateUtils.isFutureDay(yesterday));
+
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        assertTrue(DateUtils.isFutureDay(tomorrow));
+
+        Calendar nextMonth = Calendar.getInstance();
+        nextMonth.add(Calendar.MONTH, 1);
+        assertTrue(DateUtils.isFutureDay(nextMonth));
+    }
 }

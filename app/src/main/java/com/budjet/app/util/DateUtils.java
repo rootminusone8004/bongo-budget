@@ -8,6 +8,7 @@ import java.util.Locale;
 public class DateUtils {
 
     private static final SimpleDateFormat DISPLAY_DATE_FORMAT = new SimpleDateFormat("MMM dd, yy", Locale.getDefault());
+    private static final SimpleDateFormat DISPLAY_DATETIME_FORMAT = new SimpleDateFormat("MMM dd, yy • h:mm a", Locale.getDefault());
     private static final SimpleDateFormat MONTH_YEAR_FORMAT = new SimpleDateFormat("MMM yy", Locale.getDefault());
     private static final SimpleDateFormat MONTH_YEAR_KEY_FORMAT = new SimpleDateFormat("yyyy-MM", Locale.US);
     private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
@@ -86,6 +87,29 @@ public class DateUtils {
             return "Tomorrow, " + dayFormat.format(cal.getTime());
         }
         return dayFormat.format(cal.getTime());
+    }
+
+    public static String formatDateTime(long timestamp) {
+        return DISPLAY_DATETIME_FORMAT.format(new Date(timestamp));
+    }
+
+    /**
+     * Checks if the given timestamp (in ms) falls on today's date.
+     */
+    public static boolean isToday(long timestamp) {
+        Calendar txCal = Calendar.getInstance();
+        txCal.setTimeInMillis(timestamp);
+        Calendar today = Calendar.getInstance();
+        return isSameDay(txCal, today);
+    }
+
+    /**
+     * Checks if the given Calendar represents a calendar day in the future (after today).
+     */
+    public static boolean isFutureDay(Calendar cal) {
+        if (cal == null) return false;
+        Calendar today = Calendar.getInstance();
+        return getStartOfDay(cal) > getStartOfDay(today);
     }
 
     public static String formatIsoNow() {

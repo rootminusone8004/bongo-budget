@@ -73,7 +73,7 @@ public class TransactionAdapter extends ListAdapter<Transaction, TransactionAdap
             Context context = itemView.getContext();
 
             binding.tvTitle.setText(transaction.getTitle());
-            String subtitle = transaction.getCategory() + " • " + DateUtils.formatDate(transaction.getDate());
+            String subtitle = transaction.getCategory() + " • " + DateUtils.formatDateTime(transaction.getDate());
             binding.tvCategoryDate.setText(subtitle);
 
             if (transaction.getNote() != null && !transaction.getNote().trim().isEmpty()) {
@@ -103,30 +103,39 @@ public class TransactionAdapter extends ListAdapter<Transaction, TransactionAdap
                     (resolvedColor & 0x00FFFFFF) | 0x22000000 // 13% opacity background
             );
 
-            // Click listener
-            itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onTransactionClick(transaction);
-                }
-            });
+            boolean isTodayTx = DateUtils.isToday(transaction.getDate());
 
-            // Menu button
-            binding.btnMenu.setOnClickListener(v -> {
-                PopupMenu popup = new PopupMenu(context, binding.btnMenu);
-                popup.inflate(R.menu.transaction_item_menu);
-                popup.setOnMenuItemClickListener(item -> {
-                    int itemId = item.getItemId();
-                    if (itemId == R.id.menu_edit) {
-                        if (listener != null) listener.onTransactionEdit(transaction);
-                        return true;
-                    } else if (itemId == R.id.menu_delete) {
-                        if (listener != null) listener.onTransactionDelete(transaction);
-                        return true;
-                    }
-                    return false;
+            if (isTodayTx) {
+                binding.btnMenu.setVisibility(View.VISIBLE);
+                binding.btnMenu.setOnClickListener(v -> {
+                    PopupMenu popup = new PopupMenu(context, binding.btnMenu);
+                    popup.inflate(R.menu.transaction_item_menu);
+                    popup.setOnMenuItemClickListener(item -> {
+                        int itemId = item.getItemId();
+                        if (itemId == R.id.menu_edit) {
+                            if (listener != null) listener.onTransactionEdit(transaction);
+                            return true;
+                        } else if (itemId == R.id.menu_delete) {
+                            if (listener != null) listener.onTransactionDelete(transaction);
+                            return true;
+                        }
+                        return false;
+                    });
+                    popup.show();
                 });
-                popup.show();
-            });
+
+                itemView.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onTransactionClick(transaction);
+                    }
+                });
+                itemView.setClickable(true);
+            } else {
+                binding.btnMenu.setVisibility(View.GONE);
+                binding.btnMenu.setOnClickListener(null);
+                itemView.setOnClickListener(null);
+                itemView.setClickable(false);
+            }
         }
     }
 }

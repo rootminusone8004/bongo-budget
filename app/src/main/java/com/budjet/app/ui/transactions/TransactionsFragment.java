@@ -82,6 +82,7 @@ public class TransactionsFragment extends Fragment {
                 cal.get(Calendar.MONTH),
                 cal.get(Calendar.DAY_OF_MONTH)
         );
+        dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
         dialog.show();
     }
 
@@ -160,6 +161,9 @@ public class TransactionsFragment extends Fragment {
         viewModel.getSelectedDayLiveData().observe(getViewLifecycleOwner(), day -> {
             if (day != null) {
                 binding.tvSelectedDay.setText(DateUtils.formatDayHeader(day));
+                boolean isTodayOrFuture = DateUtils.isSameDay(day, Calendar.getInstance()) || DateUtils.isFutureDay(day);
+                binding.btnNextDay.setEnabled(!isTodayOrFuture);
+                binding.btnNextDay.setAlpha(isTodayOrFuture ? 0.25f : 1.0f);
             }
         });
 

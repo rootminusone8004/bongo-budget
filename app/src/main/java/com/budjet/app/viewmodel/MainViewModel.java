@@ -197,6 +197,10 @@ public class MainViewModel extends AndroidViewModel {
             int currentDayOfMonth = currentSelected != null ? currentSelected.get(Calendar.DAY_OF_MONTH) : 1;
             int maxDays = day.getActualMaximum(Calendar.DAY_OF_MONTH);
             day.set(Calendar.DAY_OF_MONTH, Math.min(currentDayOfMonth, maxDays));
+            // Never allow future dates
+            if (DateUtils.isFutureDay(day)) {
+                day = (Calendar) today.clone();
+            }
             selectedDayLiveData.setValue(day);
         }
     }
@@ -232,6 +236,10 @@ public class MainViewModel extends AndroidViewModel {
 
     public void setSelectedDay(Calendar calendar) {
         if (calendar == null) return;
+        // Never allow future dates in transactions
+        if (DateUtils.isFutureDay(calendar)) {
+            calendar = Calendar.getInstance();
+        }
         Calendar copy = (Calendar) calendar.clone();
         selectedDayLiveData.setValue(copy);
         // If the selected day is in a different month, sync currentCalendar as well
@@ -250,6 +258,10 @@ public class MainViewModel extends AndroidViewModel {
         Calendar day = selectedDayLiveData.getValue() != null ?
                 (Calendar) selectedDayLiveData.getValue().clone() : Calendar.getInstance();
         day.add(Calendar.DAY_OF_MONTH, 1);
+        // Block navigating into future dates
+        if (DateUtils.isFutureDay(day)) {
+            return;
+        }
         setSelectedDay(day);
     }
 
