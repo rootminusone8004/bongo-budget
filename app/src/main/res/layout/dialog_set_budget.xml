@@ -137,6 +137,22 @@
             android:textStyle="bold" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Use Remaining Balance Option -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_use_remaining_balance"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Use remaining balance"
+        android:textSize="12sp"
+        android:textColor="@color/primary"
+        app:icon="@drawable/ic_wallet"
+        app:iconTint="@color/primary"
+        app:iconSize="16dp"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
     <!-- Live Shrinking Pool Preview -->
     <TextView
         android:id="@+id/tv_pool_preview"
@@ -146,6 +162,45 @@
         android:textColor="@color/income_green"
         android:textSize="12sp"
         tools:text="Overall unallocated pool shrinks to: ৳8,000.00" />
+
+    <!-- Daily Budget Option (Category only) -->
+    <LinearLayout
+        android:id="@+id/layout_daily_budget_option"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Provide Daily Budget"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Show daily limit for this category"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switch_show_daily_budget"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true" />
+    </LinearLayout>
 
     <!-- Action buttons -->
     <LinearLayout

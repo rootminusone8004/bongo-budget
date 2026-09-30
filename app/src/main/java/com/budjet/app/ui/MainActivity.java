@@ -210,10 +210,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean onToolbarMenuItemClick(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_export || id == R.id.action_import) {
-            navigateToTab(R.id.navigation_backup);
-            return true;
-        } else if (id == R.id.action_sample_data) {
+        if (id == R.id.action_sample_data) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.sample_data)
                     .setMessage("This will add realistic sample transactions and budgets for this month. Proceed?")

@@ -81,10 +81,18 @@ public class SetBudgetDialog extends DialogFragment {
             binding.tvDialogTitle.setText(existingBudget != null ? "Edit Overall Budget" : "Set Overall Budget");
             binding.tilBudgetCategory.setVisibility(View.GONE);
             binding.tilCustomCategory.setVisibility(View.GONE);
+            binding.layoutDailyBudgetOption.setVisibility(View.GONE);
+            binding.btnUseRemainingBalance.setVisibility(View.GONE);
         } else {
             // Category Budget Mode: Show presets and custom category option
             binding.tvDialogTitle.setText(existingBudget != null ? "Edit Category Budget" : "Set Category Budget");
             binding.tilBudgetCategory.setVisibility(View.VISIBLE);
+            binding.layoutDailyBudgetOption.setVisibility(View.VISIBLE);
+            if (existingBudget != null) {
+                binding.switchShowDailyBudget.setChecked(existingBudget.isShowDailyBudget());
+            } else {
+                binding.switchShowDailyBudget.setChecked(true);
+            }
         }
 
         if (existingBudget != null) {
@@ -105,6 +113,8 @@ public class SetBudgetDialog extends DialogFragment {
                 binding.tvDialogTitle.setText("Set Overall Budget");
                 binding.tilBudgetCategory.setVisibility(View.GONE);
                 binding.tilCustomCategory.setVisibility(View.GONE);
+                binding.layoutDailyBudgetOption.setVisibility(View.GONE);
+                binding.btnUseRemainingBalance.setVisibility(View.GONE);
                 updateAllocationUI();
             }
         });
@@ -357,6 +367,7 @@ public class SetBudgetDialog extends DialogFragment {
                 binding.tvAllocationOverview.setText("No Overall Budget set for this month.");
                 binding.tvAllocationAvailable.setText("Set Overall Budget first before allocating quotas");
                 binding.tvAllocationAvailable.setTextColor(ContextCompat.getColor(requireContext(), R.color.expense_red));
+                binding.btnUseRemainingBalance.setVisibility(View.GONE);
 
                 binding.tilBudgetAmount.setError("Overall budget required first");
                 binding.tvPoolPreview.setText("Please set the Overall Budget first.");
@@ -367,6 +378,23 @@ public class SetBudgetDialog extends DialogFragment {
                 binding.tvAllocationOverview.setText("Overall: " + CurrencyUtils.formatAmount(result.overallLimit) + " • Other Quotas: " + CurrencyUtils.formatAmount(result.otherCategoriesAllocated));
                 binding.tvAllocationAvailable.setText("Max available for this quota: " + CurrencyUtils.formatAmount(result.maxAllowed));
                 binding.tvAllocationAvailable.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary));
+
+                if (result.maxAllowed > 0) {
+                    binding.btnUseRemainingBalance.setVisibility(View.VISIBLE);
+                    binding.btnUseRemainingBalance.setText("Use remaining balance (" + CurrencyUtils.formatAmount(result.maxAllowed) + ")");
+                    binding.btnUseRemainingBalance.setOnClickListener(v -> {
+                        if (result.maxAllowed == Math.floor(result.maxAllowed)) {
+                            binding.etBudgetAmount.setText(String.format(Locale.US, "%.0f", result.maxAllowed));
+                        } else {
+                            binding.etBudgetAmount.setText(String.format(Locale.US, "%.2f", result.maxAllowed));
+                        }
+                        if (binding.etBudgetAmount.getText() != null) {
+                            binding.etBudgetAmount.setSelection(binding.etBudgetAmount.getText().length());
+                        }
+                    });
+                } else {
+                    binding.btnUseRemainingBalance.setVisibility(View.GONE);
+                }
 
                 if (!hasAmount) {
                     binding.tilBudgetAmount.setError(null);
@@ -474,10 +502,13 @@ public class SetBudgetDialog extends DialogFragment {
         }
 
         String currentMonthKey = viewModel.getCurrentMonthYearKey();
+        boolean showDaily = isOverallMode || binding.switchShowDailyBudget.isChecked();
 
         if (existingBudget != null) {
             existingBudget.setCategory(category);
             existingBudget.setAmount(amount);
+            existingBudget.setShowDailyBudget(showDaily);
+            existingBudget.setLastModified(System.currentTimeMillis());
             viewModel.saveBudget(existingBudget);
         } else {
             // Check if a budget for this category already exists in current month to avoid duplicates
@@ -493,9 +524,12 @@ public class SetBudgetDialog extends DialogFragment {
 
             if (duplicate != null) {
                 duplicate.setAmount(amount);
+                duplicate.setShowDailyBudget(showDaily);
+                duplicate.setLastModified(System.currentTimeMillis());
                 viewModel.saveBudget(duplicate);
             } else {
-                Budget newBudget = new Budget(category, amount, currentMonthKey);
+                Budget newBudget = new Budget(category, amount, currentMonthKey, showDaily);
+                newBudget.setLastModified(System.currentTimeMillis());
                 viewModel.saveBudget(newBudget);
             }
         }

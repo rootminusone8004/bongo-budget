@@ -34,6 +34,16 @@ public class ModelTest {
         Budget category = new Budget("Groceries", 400.0, "2026-09");
         assertFalse(category.isOverall());
         assertEquals("Groceries", category.getCategory());
+        assertTrue(category.isShowDailyBudget()); // Defaults to true
+
+        Budget noDaily = new Budget("Subscriptions", 100.0, "2026-09", false);
+        assertFalse(noDaily.isShowDailyBudget());
+        noDaily.setShowDailyBudget(true);
+        assertTrue(noDaily.isShowDailyBudget());
+
+        long now = System.currentTimeMillis();
+        noDaily.setLastModified(now);
+        assertEquals(now, noDaily.getLastModified());
     }
 
     @Test

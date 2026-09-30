@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.0] - 01-10-2026
+
+### Added
+- Per-category daily budget toggle allowing users to decide whether a category displays daily spending limits.
+- Overspending deduction prompt: when an expense exceeds a category's budget, prompt the user to choose another category with available quota to deduct the overspent amount from.
+- "Use remaining balance" button in budget dialog to easily allocate the remaining budget pool without manual entry.
+- Finished category exclusion: categories that exceeded their budget are automatically hidden from the Dashboard starting the next day, reappearing when their budget is modified.
+
+### Changed
+- Removed redundant export and import data options from top-right overflow toolbar menu.
+- Upgraded Room database schema to version 2 with migration preserving all existing budgets and transactions.
+
 ## [1.2.0] - 18-09-2026
 
 ### Added

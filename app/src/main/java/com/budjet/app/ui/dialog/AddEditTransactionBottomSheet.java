@@ -16,11 +16,14 @@ import androidx.lifecycle.ViewModelProvider;
 import com.budjet.app.R;
 import com.budjet.app.data.model.Budget;
 import com.budjet.app.data.model.Category;
+import com.budjet.app.data.model.CategorySpending;
 import com.budjet.app.data.model.Transaction;
 import com.budjet.app.databinding.BottomSheetAddTransactionBinding;
+import com.budjet.app.util.CurrencyUtils;
 import com.budjet.app.util.DateUtils;
 import com.budjet.app.viewmodel.MainViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -39,6 +42,8 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
     private final Calendar selectedDate = Calendar.getInstance();
     private String selectedType = Transaction.TYPE_EXPENSE;
     private List<String> createdExpenseCategories = new ArrayList<>();
+    private List<Budget> currentBudgets = new ArrayList<>();
+    private List<CategorySpending> currentCategorySpending = new ArrayList<>();
 
     public static final String ARG_DEFAULT_DATE = "arg_default_date";
 
@@ -95,6 +100,14 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
             if (Transaction.TYPE_EXPENSE.equals(selectedType)) {
                 setupCategories(selectedType);
             }
+        });
+
+        viewModel.getMonthlyBudgets().observe(getViewLifecycleOwner(), budgets -> {
+            currentBudgets = budgets != null ? budgets : new ArrayList<>();
+        });
+
+        viewModel.getCategorySpending().observe(getViewLifecycleOwner(), spending -> {
+            currentCategorySpending = spending != null ? spending : new ArrayList<>();
         });
 
         setupCategories(selectedType);
@@ -309,6 +322,138 @@ public class AddEditTransactionBottomSheet extends BottomSheetDialogFragment {
         }
         binding.tilDate.setError(null);
 
+        if (Transaction.TYPE_EXPENSE.equals(selectedType)) {
+            Budget targetBudget = null;
+            if (currentBudgets != null) {
+                for (Budget b : currentBudgets) {
+                    if (b != null && !b.isOverall() && category.equalsIgnoreCase(b.getCategory())) {
+                        targetBudget = b;
+                        break;
+                    }
+                }
+            }
+
+            double currentCategorySpent = 0.0;
+            if (currentCategorySpending != null) {
+                for (CategorySpending cs : currentCategorySpending) {
+                    if (cs != null && category.equalsIgnoreCase(cs.getCategory())) {
+                        currentCategorySpent = cs.getTotalSpent();
+                        break;
+                    }
+                }
+            }
+
+            if (existingTransaction != null && existingTransaction.isExpense()
+                    && category.equalsIgnoreCase(existingTransaction.getCategory())) {
+                currentCategorySpent = Math.max(0.0, currentCategorySpent - existingTransaction.getAmount());
+            }
+
+            double projectedSpent = currentCategorySpent + amount;
+
+            if (targetBudget != null && targetBudget.getAmount() > 0 && projectedSpent > targetBudget.getAmount()) {
+                double deficit = projectedSpent - targetBudget.getAmount();
+                promptOverspendingDeduction(title, amount, category, note, transactionTimestamp, targetBudget, deficit);
+                return;
+            }
+        }
+
+        executeSaveTransaction(title, amount, category, note, transactionTimestamp);
+    }
+
+    private void promptOverspendingDeduction(
+            String title,
+            double amount,
+            String category,
+            String note,
+            long transactionTimestamp,
+            Budget targetBudget,
+            double deficit
+    ) {
+        List<Budget> candidateBudgets = new ArrayList<>();
+        List<String> candidateLabels = new ArrayList<>();
+
+        if (currentBudgets != null) {
+            for (Budget b : currentBudgets) {
+                if (b != null && !b.isOverall() && !category.equalsIgnoreCase(b.getCategory()) && b.getAmount() >= deficit) {
+                    candidateBudgets.add(b);
+                }
+            }
+        }
+
+        // Sort candidates: categories with available balance >= deficit first, sorted descending
+        candidateBudgets.sort((b1, b2) -> {
+            double spent1 = getSpentForCategory(b1.getCategory());
+            double avail1 = b1.getAmount() - spent1;
+            double spent2 = getSpentForCategory(b2.getCategory());
+            double avail2 = b2.getAmount() - spent2;
+
+            boolean b1HasEnough = avail1 >= deficit;
+            boolean b2HasEnough = avail2 >= deficit;
+
+            if (b1HasEnough && !b2HasEnough) return -1;
+            if (!b1HasEnough && b2HasEnough) return 1;
+            return Double.compare(avail2, avail1);
+        });
+
+        for (Budget b : candidateBudgets) {
+            double spent = getSpentForCategory(b.getCategory());
+            double avail = Math.max(0.0, b.getAmount() - spent);
+            candidateLabels.add(b.getCategory() + " (Available: " + CurrencyUtils.formatAmount(avail) + " / Quota: " + CurrencyUtils.formatAmount(b.getAmount()) + ")");
+        }
+
+        if (candidateBudgets.isEmpty()) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Overspending Detected")
+                    .setMessage("This expense exceeds the budget quota for \"" + category + "\" by " + CurrencyUtils.formatAmount(deficit) + ".\n\nNo other category has sufficient quota (minimum " + CurrencyUtils.formatAmount(deficit) + ") to cover the overspent amount.")
+                    .setPositiveButton("Save Anyway", (dialog, which) -> {
+                        executeSaveTransaction(title, amount, category, note, transactionTimestamp);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
+        }
+
+        final int[] selectedIndex = {0};
+        String[] labelsArray = candidateLabels.toArray(new String[0]);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Overspending Detected")
+                .setMessage("This expense exceeds the budget quota for \"" + category + "\" by " + CurrencyUtils.formatAmount(deficit) + ".\n\nSelect a category to deduct the overspent amount from:")
+                .setSingleChoiceItems(labelsArray, 0, (dialog, which) -> {
+                    selectedIndex[0] = which;
+                })
+                .setPositiveButton("Deduct & Save", (dialog, which) -> {
+                    Budget donor = candidateBudgets.get(selectedIndex[0]);
+                    donor.setAmount(donor.getAmount() - deficit);
+                    donor.setLastModified(System.currentTimeMillis());
+                    targetBudget.setAmount(targetBudget.getAmount() + deficit);
+                    targetBudget.setLastModified(System.currentTimeMillis());
+                    viewModel.saveBudget(donor);
+                    viewModel.saveBudget(targetBudget);
+                    Toast.makeText(requireContext(),
+                            "Deducted " + CurrencyUtils.formatAmount(deficit) + " from " + donor.getCategory(),
+                            Toast.LENGTH_SHORT).show();
+                    executeSaveTransaction(title, amount, category, note, transactionTimestamp);
+                })
+                .setNeutralButton("Save Anyway", (dialog, which) -> {
+                    executeSaveTransaction(title, amount, category, note, transactionTimestamp);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private double getSpentForCategory(String category) {
+        if (currentCategorySpending != null && category != null) {
+            for (CategorySpending cs : currentCategorySpending) {
+                if (cs != null && category.equalsIgnoreCase(cs.getCategory())) {
+                    return cs.getTotalSpent();
+                }
+            }
+        }
+        return 0.0;
+    }
+
+    private void executeSaveTransaction(String title, double amount, String category, String note, long transactionTimestamp) {
         if (existingTransaction != null) {
             Transaction updatedTx = new Transaction(
                     existingTransaction.getId(),

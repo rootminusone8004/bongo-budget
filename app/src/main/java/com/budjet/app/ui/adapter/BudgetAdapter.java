@@ -160,13 +160,20 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
             }
 
             // View toggle states
-            if (isDailyMode) {
+            if (!budget.isShowDailyBudget()) {
+                binding.layoutOverallMode.setVisibility(View.VISIBLE);
+                binding.layoutDailyMode.setVisibility(View.GONE);
+                binding.btnToggleMode.setVisibility(View.GONE);
+                binding.tvModeHint.setText("Tap card to view transactions");
+            } else if (isDailyMode) {
+                binding.btnToggleMode.setVisibility(View.VISIBLE);
                 binding.layoutOverallMode.setVisibility(View.GONE);
                 binding.layoutDailyMode.setVisibility(View.VISIBLE);
                 binding.btnToggleMode.setText("Overall");
                 binding.btnToggleMode.setIconResource(R.drawable.ic_view_agenda);
                 binding.tvModeHint.setText("Tap card to view transactions");
             } else {
+                binding.btnToggleMode.setVisibility(View.VISIBLE);
                 binding.layoutOverallMode.setVisibility(View.VISIBLE);
                 binding.layoutDailyMode.setVisibility(View.GONE);
                 binding.btnToggleMode.setText("Daily");

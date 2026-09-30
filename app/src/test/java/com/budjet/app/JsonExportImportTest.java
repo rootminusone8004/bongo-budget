@@ -62,6 +62,7 @@ public class JsonExportImportTest {
         assertEquals(Budget.CATEGORY_OVERALL, b0.getCategory());
         assertEquals(3000.0, b0.getAmount(), 0.001);
         assertEquals("2026-09", b0.getMonthYear());
+        assertTrue(b0.isShowDailyBudget());
 
         Transaction t0 = importedData.getTransactions().get(0);
         assertEquals("Paycheck", t0.getTitle());
@@ -85,5 +86,31 @@ public class JsonExportImportTest {
         assertNotNull(parsed);
         assertEquals(0, parsed.getBudgets().size());
         assertEquals(0, parsed.getTransactions().size());
+    }
+
+    @Test
+    public void testOlderJsonWithoutShowDailyBudgetCompatibility() {
+        String legacyJson = "{\n" +
+                "  \"appName\": \"Bongo Budget\",\n" +
+                "  \"version\": 1,\n" +
+                "  \"exportDate\": \"2026-09-15T12:00:00Z\",\n" +
+                "  \"budgets\": [\n" +
+                "    {\n" +
+                "      \"id\": 1,\n" +
+                "      \"category\": \"Dining\",\n" +
+                "      \"amount\": 300.0,\n" +
+                "      \"monthYear\": \"2026-09\"\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"transactions\": []\n" +
+                "}";
+
+        ExportData data = JsonUtils.fromJsonString(legacyJson);
+        assertNotNull(data);
+        assertEquals(1, data.getBudgets().size());
+        Budget dining = data.getBudgets().get(0);
+        assertEquals("Dining", dining.getCategory());
+        assertEquals(300.0, dining.getAmount(), 0.001);
+        assertTrue(dining.isShowDailyBudget());
     }
 }

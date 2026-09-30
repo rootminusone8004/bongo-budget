@@ -31,6 +31,7 @@ public class CategorySpendingAdapter extends RecyclerView.Adapter<CategorySpendi
 
     private List<CategorySpending> items = new ArrayList<>();
     private Map<String, Double> categoryBudgetMap = new HashMap<>();
+    private Map<String, Boolean> categoryDailyBudgetEnabledMap = new HashMap<>();
     private Map<String, Double> categoryTodaySpentMap = new HashMap<>();
     private double totalExpense = 0.0;
     private Calendar currentCalendar = Calendar.getInstance();
@@ -57,10 +58,12 @@ public class CategorySpendingAdapter extends RecyclerView.Adapter<CategorySpendi
                         boolean isDailyMode) {
         this.items = list != null ? list : new ArrayList<>();
         this.categoryBudgetMap = new HashMap<>();
+        this.categoryDailyBudgetEnabledMap = new HashMap<>();
         if (budgets != null) {
             for (Budget b : budgets) {
                 if (b != null && !b.isOverall()) {
                     categoryBudgetMap.put(b.getCategory(), b.getAmount());
+                    categoryDailyBudgetEnabledMap.put(b.getCategory(), b.isShowDailyBudget());
                 }
             }
         }
@@ -133,7 +136,10 @@ public class CategorySpendingAdapter extends RecyclerView.Adapter<CategorySpendi
             Double todaySpentObj = categoryTodaySpentMap.get(category);
             double todaySpent = todaySpentObj != null ? todaySpentObj : 0.0;
 
-            if (isDailyMode && limit > 0) {
+            boolean showDaily = !categoryDailyBudgetEnabledMap.containsKey(category)
+                    || Boolean.TRUE.equals(categoryDailyBudgetEnabledMap.get(category));
+
+            if (isDailyMode && limit > 0 && showDaily) {
                 // Calculate daily budget info
                 DailyBudgetCalculator.DailyBudgetInfo dailyInfo = DailyBudgetCalculator.calculate(
                         limit, monthlySpent, currentCalendar

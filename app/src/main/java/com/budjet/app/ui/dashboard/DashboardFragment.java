@@ -24,6 +24,7 @@ import com.budjet.app.ui.dialog.SetBudgetDialog;
 import com.budjet.app.util.BudgetAllocationCalculator;
 import com.budjet.app.util.CurrencyUtils;
 import com.budjet.app.util.DailyBudgetCalculator;
+import com.budjet.app.util.DateUtils;
 import com.budjet.app.viewmodel.MainViewModel;
 
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ public class DashboardFragment extends Fragment {
     private boolean isCategoryDailyMode = true; // Daily remaining by default
     private Map<String, Double> todaySpentMap = new HashMap<>();
     private List<CategorySpending> currentCategorySpendingList = new ArrayList<>();
+    private List<Transaction> currentMonthlyTransactions = new ArrayList<>();
     private Calendar currentCalendar = Calendar.getInstance();
 
     @Nullable
@@ -142,6 +144,7 @@ public class DashboardFragment extends Fragment {
 
         // Monthly transactions (to calculate today's spending per category reliably)
         viewModel.getMonthlyTransactions().observe(getViewLifecycleOwner(), transactions -> {
+            currentMonthlyTransactions = transactions != null ? transactions : new ArrayList<>();
             calculateTodaySpentMap(transactions);
             updateCategorySpending();
         });
@@ -160,6 +163,31 @@ public class DashboardFragment extends Fragment {
             updateBalance();
             updateCategorySpending();
         });
+    }
+
+    private Budget getBudgetForCategory(String category) {
+        if (currentMonthlyBudgets != null && category != null) {
+            for (Budget b : currentMonthlyBudgets) {
+                if (b != null && category.equalsIgnoreCase(b.getCategory())) {
+                    return b;
+                }
+            }
+        }
+        return null;
+    }
+
+    private long getLatestTransactionDateForCategory(String category) {
+        long latest = 0;
+        if (currentMonthlyTransactions != null && category != null) {
+            for (Transaction t : currentMonthlyTransactions) {
+                if (t != null && "EXPENSE".equalsIgnoreCase(t.getType()) && category.equalsIgnoreCase(t.getCategory())) {
+                    if (t.getDate() > latest) {
+                        latest = t.getDate();
+                    }
+                }
+            }
+        }
+        return latest;
     }
 
     private void calculateTodaySpentMap(List<Transaction> transactions) {
@@ -192,17 +220,47 @@ public class DashboardFragment extends Fragment {
     }
 
     private void updateCategorySpending() {
-        if (currentCategorySpendingList == null || currentCategorySpendingList.isEmpty()) {
+        List<CategorySpending> displayList = new ArrayList<>();
+        if (currentCategorySpendingList != null) {
+            for (CategorySpending cs : currentCategorySpendingList) {
+                String cat = cs.getCategory();
+                Budget b = getBudgetForCategory(cat);
+                if (b != null && b.getAmount() > 0) {
+                    if (cs.getTotalSpent() >= b.getAmount()) {
+                        // Category budget is over
+                        long lastTxDate = getLatestTransactionDateForCategory(cat);
+                        boolean isLastTxToday = lastTxDate > 0 && DateUtils.isToday(lastTxDate);
+                        boolean modifiedToday = b.getLastModified() > lastTxDate && DateUtils.isToday(b.getLastModified());
+                        if (!isLastTxToday && !modifiedToday) {
+                            // Category finished on previous day and not modified today: absent from Dashboard
+                            continue;
+                        }
+                    }
+                }
+                displayList.add(cs);
+            }
+        }
+
+        if (displayList.isEmpty()) {
             binding.rvCategorySpending.setVisibility(View.GONE);
             binding.tvNoCategorySpending.setVisibility(View.VISIBLE);
             binding.btnToggleCategorySpending.setVisibility(View.GONE);
         } else {
+            boolean hasAnyDailyCategory = false;
+            for (CategorySpending cs : displayList) {
+                Budget b = getBudgetForCategory(cs.getCategory());
+                if (b != null && b.getAmount() > 0 && b.isShowDailyBudget()) {
+                    hasAnyDailyCategory = true;
+                    break;
+                }
+            }
+
             binding.rvCategorySpending.setVisibility(View.VISIBLE);
             binding.tvNoCategorySpending.setVisibility(View.GONE);
-            binding.btnToggleCategorySpending.setVisibility(View.VISIBLE);
+            binding.btnToggleCategorySpending.setVisibility(hasAnyDailyCategory ? View.VISIBLE : View.GONE);
             binding.btnToggleCategorySpending.setText(isCategoryDailyMode ? "Daily" : "Total");
             categorySpendingAdapter.setData(
-                    currentCategorySpendingList,
+                    displayList,
                     currentMonthlyBudgets,
                     todaySpentMap,
                     currentExpense,

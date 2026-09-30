@@ -249,9 +249,17 @@ public class BudgetsFragment extends Fragment {
             binding.layoutEmptyBudgets.setVisibility(View.VISIBLE);
             binding.btnToggleAllQuotas.setVisibility(View.GONE);
         } else {
+            boolean hasDaily = false;
+            for (Budget b : currentCategoryBudgets) {
+                if (b != null && b.isShowDailyBudget()) {
+                    hasDaily = true;
+                    break;
+                }
+            }
+
             binding.rvCategoryBudgets.setVisibility(View.VISIBLE);
             binding.layoutEmptyBudgets.setVisibility(View.GONE);
-            binding.btnToggleAllQuotas.setVisibility(View.VISIBLE);
+            binding.btnToggleAllQuotas.setVisibility(hasDaily ? View.VISIBLE : View.GONE);
             adapter.setBudgets(currentCategoryBudgets, categorySpendingMap, currentCalendar);
         }
     }

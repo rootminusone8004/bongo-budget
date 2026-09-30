@@ -1,0 +1,6 @@
+Added
+  - Per-category daily budget toggle to customize which categories display daily limits.
+  - Overspending deduction prompt to rebalance budgets from other categories when an expense exceeds quota.
+  - "Use remaining balance" button in the budget creation dialog.
+  - Automatically exclude finished overspent categories from the Dashboard on subsequent days.
+  - Cleaned up top toolbar menu by removing redundant import/export actions.
