@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.2] - 02-10-2026
+
+### Changed
+- Disabled dependency metadata in APK signing block to comply with F-Droid security and scanner requirements.
+
 ## [1.3.1] - 01-10-2026
 
 ### Changed
