@@ -88,7 +88,7 @@ def main():
             "| Property | Value |",
             "| :--- | :--- |",
             "| **Application Name** | **Bongo Budget** |",
-            "| **Package ID** | `com.budjet.app` |",
+            "| **Package ID** | `com.mhrahmankwoshik.bongo_budget` |",
             f"| **Version** | `{version}` |",
             f"| **Release Tag** | `{tag}` |",
             f"| **Build Status** | {build_status} |",

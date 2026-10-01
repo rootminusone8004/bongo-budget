@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.1] - 01-10-2026
+
+### Changed
+- Changed the app string for Fdroid inclusion.
+
 ## [1.3.0] - 01-10-2026
 
 ### Added

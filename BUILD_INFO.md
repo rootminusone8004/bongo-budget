@@ -2,7 +2,7 @@
 
 ## Project Information
   - **Project Name:** Bongo Budget
-  - **Package Name:** com.budjet.app
+  - **Package Name:** com.mhrahmankwoshik.bongo_budget
 
 ## Build Environment
   - **Android Studio / IntelliJ IDEA (Community Edition):** Ladybug / Iguana or later (IDEA 2024.3+)

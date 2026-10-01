@@ -1,0 +1,2 @@
+Changed
+  - Changed the app string for Fdroid inclusion.
