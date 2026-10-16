@@ -139,53 +139,82 @@ public class CategorySpendingAdapter extends RecyclerView.Adapter<CategorySpendi
             boolean showDaily = !categoryDailyBudgetEnabledMap.containsKey(category)
                     || Boolean.TRUE.equals(categoryDailyBudgetEnabledMap.get(category));
 
-            if (isDailyMode && limit > 0 && showDaily) {
-                // Calculate daily budget info
-                DailyBudgetCalculator.DailyBudgetInfo dailyInfo = DailyBudgetCalculator.calculate(
-                        limit, monthlySpent, currentCalendar
-                );
+            if (isDailyMode && limit > 0) {
+                if (showDaily) {
+                    // Calculate daily budget info
+                    DailyBudgetCalculator.DailyBudgetInfo dailyInfo = DailyBudgetCalculator.calculate(
+                            limit, monthlySpent, currentCalendar
+                    );
 
-                if (dailyInfo.isMonthEnded) {
-                    binding.tvCategorySubtitle.setText("Spent: " + CurrencyUtils.formatAmount(monthlySpent) + " of " + CurrencyUtils.formatAmount(limit));
-                    binding.tvCategoryAmount.setText(CurrencyUtils.formatAmount(0.0));
-                    binding.tvCategoryAmount.setTextColor(ContextCompat.getColor(context, R.color.text_muted));
-                    binding.tvCategoryStatus.setText("Month ended");
-                    binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.text_muted));
-                    binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.text_muted));
-                    binding.progressCategory.setProgress(0);
+                    if (dailyInfo.isMonthEnded) {
+                        binding.tvCategorySubtitle.setText("Spent: " + CurrencyUtils.formatAmount(monthlySpent) + " of " + CurrencyUtils.formatAmount(limit));
+                        binding.tvCategoryAmount.setText(CurrencyUtils.formatAmount(0.0));
+                        binding.tvCategoryAmount.setTextColor(ContextCompat.getColor(context, R.color.text_muted));
+                        binding.tvCategoryStatus.setText("Month ended");
+                        binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.text_muted));
+                        binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.text_muted));
+                        binding.progressCategory.setProgress(0);
+                    } else {
+                        int remDays = dailyInfo.remainingDays > 0 ? dailyInfo.remainingDays : 1;
+                        double previousSpent = Math.max(0.0, monthlySpent - todaySpent);
+                        double availableBudget = limit - previousSpent;
+                        double dailyAllowance = availableBudget > 0 ? (availableBudget / remDays) : 0.0;
+                        double dailyRemaining = dailyAllowance - todaySpent;
+
+                        boolean isOverLimit = (dailyRemaining < 0) || (monthlySpent > limit) || dailyInfo.isOverBudget;
+
+                        binding.tvCategorySubtitle.setText("Today: " + CurrencyUtils.formatAmount(todaySpent) + " / " + CurrencyUtils.formatAmount(dailyAllowance) + " • Quota: " + CurrencyUtils.formatAmount(limit));
+
+                        if (isOverLimit) {
+                            double overspending = monthlySpent > limit ? (monthlySpent - limit) : Math.abs(dailyRemaining);
+                            binding.tvCategoryAmount.setText("Over by " + CurrencyUtils.formatAmount(overspending));
+                            binding.tvCategoryAmount.setTextColor(ContextCompat.getColor(context, R.color.expense_red));
+
+                            binding.tvCategoryStatus.setText(monthlySpent > limit ? "Exceeded quota" : "Exceeded daily limit");
+                            binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.expense_red));
+
+                            binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.expense_red));
+                            binding.progressCategory.setProgress(100);
+                        } else {
+                            binding.tvCategoryAmount.setText(CurrencyUtils.formatAmount(dailyRemaining));
+                            binding.tvCategoryAmount.setTextColor(ContextCompat.getColor(context, R.color.income_green));
+
+                            binding.tvCategoryStatus.setText("Daily remaining");
+                            binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.income_green));
+
+                            int dailyRemainingPct = dailyAllowance > 0 ? (int) Math.round((dailyRemaining / dailyAllowance) * 100) : 0;
+                            dailyRemainingPct = Math.max(0, Math.min(dailyRemainingPct, 100));
+
+                            binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.income_green));
+                            binding.progressCategory.setProgress(dailyRemainingPct);
+                        }
+                    }
                 } else {
-                    int remDays = dailyInfo.remainingDays > 0 ? dailyInfo.remainingDays : 1;
-                    double previousSpent = Math.max(0.0, monthlySpent - todaySpent);
-                    double availableBudget = limit - previousSpent;
-                    double dailyAllowance = availableBudget > 0 ? (availableBudget / remDays) : 0.0;
-                    double dailyRemaining = dailyAllowance - todaySpent;
+                    // Non-daily category in default mode: show remaining quota
+                    int spentPct = (int) Math.round((monthlySpent / limit) * 100);
+                    binding.tvCategorySubtitle.setText("Spent: " + CurrencyUtils.formatAmount(monthlySpent) + " of " + CurrencyUtils.formatAmount(limit) + " (" + spentPct + "%)");
 
-                    boolean isOverLimit = (dailyRemaining < 0) || (monthlySpent > limit) || dailyInfo.isOverBudget;
-
-                    binding.tvCategorySubtitle.setText("Today: " + CurrencyUtils.formatAmount(todaySpent) + " / " + CurrencyUtils.formatAmount(dailyAllowance) + " • Quota: " + CurrencyUtils.formatAmount(limit));
-
-                    if (isOverLimit) {
-                        double overspending = monthlySpent > limit ? (monthlySpent - limit) : Math.abs(dailyRemaining);
+                    double remaining = limit - monthlySpent;
+                    if (monthlySpent > limit) {
+                        double overspending = monthlySpent - limit;
                         binding.tvCategoryAmount.setText("Over by " + CurrencyUtils.formatAmount(overspending));
                         binding.tvCategoryAmount.setTextColor(ContextCompat.getColor(context, R.color.expense_red));
 
-                        binding.tvCategoryStatus.setText(monthlySpent > limit ? "Exceeded quota" : "Exceeded daily limit");
+                        binding.tvCategoryStatus.setText("Exceeded quota");
                         binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.expense_red));
 
                         binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.expense_red));
                         binding.progressCategory.setProgress(100);
                     } else {
-                        binding.tvCategoryAmount.setText(CurrencyUtils.formatAmount(dailyRemaining));
+                        binding.tvCategoryAmount.setText(CurrencyUtils.formatAmount(remaining));
                         binding.tvCategoryAmount.setTextColor(ContextCompat.getColor(context, R.color.income_green));
 
-                        binding.tvCategoryStatus.setText("Daily remaining");
+                        binding.tvCategoryStatus.setText("Remaining");
                         binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.income_green));
 
-                        int dailyRemainingPct = dailyAllowance > 0 ? (int) Math.round((dailyRemaining / dailyAllowance) * 100) : 0;
-                        dailyRemainingPct = Math.max(0, Math.min(dailyRemainingPct, 100));
-
+                        int remainingPct = (int) Math.round((remaining / limit) * 100);
                         binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.income_green));
-                        binding.progressCategory.setProgress(dailyRemainingPct);
+                        binding.progressCategory.setProgress(Math.max(0, Math.min(remainingPct, 100)));
                     }
                 }
             } else {

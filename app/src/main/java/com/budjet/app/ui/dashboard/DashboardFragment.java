@@ -107,7 +107,6 @@ public class DashboardFragment extends Fragment {
 
         binding.btnToggleCategorySpending.setOnClickListener(v -> {
             isCategoryDailyMode = !isCategoryDailyMode;
-            binding.btnToggleCategorySpending.setText(isCategoryDailyMode ? "Daily" : "Total");
             updateCategorySpending();
         });
     }
@@ -247,18 +246,25 @@ public class DashboardFragment extends Fragment {
             binding.btnToggleCategorySpending.setVisibility(View.GONE);
         } else {
             boolean hasAnyDailyCategory = false;
+            boolean hasAnyBudgetCategory = false;
             for (CategorySpending cs : displayList) {
                 Budget b = getBudgetForCategory(cs.getCategory());
-                if (b != null && b.getAmount() > 0 && b.isShowDailyBudget()) {
-                    hasAnyDailyCategory = true;
-                    break;
+                if (b != null && b.getAmount() > 0) {
+                    hasAnyBudgetCategory = true;
+                    if (b.isShowDailyBudget()) {
+                        hasAnyDailyCategory = true;
+                    }
                 }
             }
 
             binding.rvCategorySpending.setVisibility(View.VISIBLE);
             binding.tvNoCategorySpending.setVisibility(View.GONE);
-            binding.btnToggleCategorySpending.setVisibility(hasAnyDailyCategory ? View.VISIBLE : View.GONE);
-            binding.btnToggleCategorySpending.setText(isCategoryDailyMode ? "Daily" : "Total");
+            binding.btnToggleCategorySpending.setVisibility(hasAnyBudgetCategory ? View.VISIBLE : View.GONE);
+            if (isCategoryDailyMode) {
+                binding.btnToggleCategorySpending.setText(hasAnyDailyCategory ? "Daily" : "Remaining");
+            } else {
+                binding.btnToggleCategorySpending.setText("Total");
+            }
             categorySpendingAdapter.setData(
                     displayList,
                     currentMonthlyBudgets,
