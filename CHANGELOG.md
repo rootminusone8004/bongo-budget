@@ -2,13 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.4.1] - 17-10-2026
+
+### Changed
+- Category spending bars for categories without daily budget limits now use their respective category icon color instead of green. 
+
 ## [1.4.0] - 16-10-2026
 
 ### Added
 - Display remaining category quota by default in Dashboard for categories without daily budget limits.
 
 ### Changed
-- Adopted dynamic version resolution and version code generation matching GambitStudio.
+- Adopted dynamic version resolution and version code generation.
 
 ## [1.3.2] - 02-10-2026
 

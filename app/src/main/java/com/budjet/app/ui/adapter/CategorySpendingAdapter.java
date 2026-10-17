@@ -213,7 +213,7 @@ public class CategorySpendingAdapter extends RecyclerView.Adapter<CategorySpendi
                         binding.tvCategoryStatus.setTextColor(ContextCompat.getColor(context, R.color.income_green));
 
                         int remainingPct = (int) Math.round((remaining / limit) * 100);
-                        binding.progressCategory.setIndicatorColor(ContextCompat.getColor(context, R.color.income_green));
+                        binding.progressCategory.setIndicatorColor(resolvedColor);
                         binding.progressCategory.setProgress(Math.max(0, Math.min(remainingPct, 100)));
                     }
                 }
