@@ -82,4 +82,7 @@
     <string name="export_failed">Export failed: %1$s</string>
     <string name="import_success">Import successful: %1$d transactions, %2$d budgets restored.</string>
     <string name="import_failed">Import failed: %1$s</string>
+    <string name="copy_previous_month_budgets">Copy Budgets from Previous Month</string>
+    <string name="copy_previous_month_success">Copied %1$d budgets from %2$s.</string>
+    <string name="copy_previous_month_none">No budgets found in %1$s to copy.</string>
 </resources>

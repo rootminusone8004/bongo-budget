@@ -435,6 +435,25 @@ public class MainViewModel extends AndroidViewModel {
         });
     }
 
+    public void copyBudgetsFromPreviousMonth(BudgetRepository.RepositoryCallback<Integer> callback) {
+        Calendar prev = (Calendar) currentCalendar.clone();
+        prev.add(Calendar.MONTH, -1);
+        String prevMonthKey = DateUtils.formatMonthYearKey(prev);
+        String targetMonthKey = getCurrentMonthYearKey();
+        repository.copyBudgetsFromMonth(prevMonthKey, targetMonthKey, new BudgetRepository.RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer count) {
+                updateFilterCriteria();
+                if (callback != null) callback.onSuccess(count);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                if (callback != null) callback.onError(e);
+            }
+        });
+    }
+
     public void populateSampleData() {
         repository.populateSampleData(new BudgetRepository.RepositoryCallback<Void>() {
             @Override

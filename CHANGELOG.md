@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.5.0] - 01-11-2026
+
+### Added
+- "Copy Budgets from Previous Month" button in the Budgets screen to quickly duplicate the previous month's overall budget and category limits when setting up a new month.
+
+### Changed
+- Preserved `showDailyBudget` toggle setting across budget export and restore.
+
 ## [1.4.1] - 17-10-2026
 
 ### Changed

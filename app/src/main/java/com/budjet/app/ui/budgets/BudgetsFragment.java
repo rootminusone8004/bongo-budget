@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.budjet.app.R;
 import com.budjet.app.data.model.Budget;
 import com.budjet.app.data.model.CategorySpending;
+import com.budjet.app.data.repository.BudgetRepository;
 import com.budjet.app.databinding.FragmentBudgetsBinding;
 import com.budjet.app.ui.adapter.BudgetAdapter;
 import com.budjet.app.ui.dialog.CategoryTransactionsBottomSheet;
@@ -23,6 +25,7 @@ import com.budjet.app.ui.dialog.SetBudgetDialog;
 import com.budjet.app.util.BudgetAllocationCalculator;
 import com.budjet.app.util.CurrencyUtils;
 import com.budjet.app.util.DailyBudgetCalculator;
+import com.budjet.app.util.DateUtils;
 import com.budjet.app.viewmodel.MainViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -105,6 +108,27 @@ public class BudgetsFragment extends Fragment {
         binding.btnAddCategoryBudget.setOnClickListener(v -> {
             SetBudgetDialog.newInstance(null, null)
                     .show(getChildFragmentManager(), "add_cat_budget");
+        });
+
+        binding.btnCopyPreviousMonth.setOnClickListener(v -> {
+            Calendar prev = (Calendar) currentCalendar.clone();
+            prev.add(Calendar.MONTH, -1);
+            String prevMonthDisplay = DateUtils.formatMonthYear(prev);
+            viewModel.copyBudgetsFromPreviousMonth(new BudgetRepository.RepositoryCallback<Integer>() {
+                @Override
+                public void onSuccess(Integer count) {
+                    if (count != null && count > 0) {
+                        Toast.makeText(requireContext(), getString(R.string.copy_previous_month_success, count, prevMonthDisplay), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), getString(R.string.copy_previous_month_none, prevMonthDisplay), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(requireContext(), "Failed to copy budgets: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 

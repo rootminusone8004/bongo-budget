@@ -55,6 +55,12 @@ public interface BudgetDao {
     @Query("SELECT * FROM budgets ORDER BY id ASC")
     List<Budget> getAllBudgetsSync();
 
+    @Query("SELECT * FROM budgets WHERE category = :category AND monthYear = :monthYear LIMIT 1")
+    Budget getBudgetByCategoryAndExactMonthSync(String category, String monthYear);
+
+    @Query("SELECT * FROM budgets WHERE monthYear = :monthYear ORDER BY category ASC")
+    List<Budget> getBudgetsForMonthSync(String monthYear);
+
     @Query("SELECT COUNT(*) FROM budgets")
     int getBudgetCountSync();
 }

@@ -20,7 +20,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -192,32 +194,96 @@ public class BudgetRepository {
                     budgetDao.deleteAll();
                 }
 
+                int transCount = 0;
                 List<Transaction> transactions = data.getTransactions();
                 if (transactions != null && !transactions.isEmpty()) {
                     List<Transaction> toInsert = new ArrayList<>();
                     long fallbackTimestamp = System.currentTimeMillis();
                     for (Transaction t : transactions) {
-                        // Backward compatibility: if date is 0 (missing from old JSON), use current time
                         long txDate = t.getDate() > 0 ? t.getDate() : fallbackTimestamp;
-                        // Reset ID so database generates new auto-increment ID to prevent collisions
                         toInsert.add(new Transaction(t.getTitle(), t.getAmount(), t.getType(), t.getCategory(), txDate, t.getNote()));
                     }
                     transactionDao.insertAll(toInsert);
+                    transCount = toInsert.size();
                 }
 
+                int bCount = 0;
                 List<Budget> budgets = data.getBudgets();
                 if (budgets != null && !budgets.isEmpty()) {
-                    List<Budget> toInsertBudgets = new ArrayList<>();
-                    for (Budget b : budgets) {
-                        toInsertBudgets.add(new Budget(b.getCategory(), b.getAmount(), b.getMonthYear()));
+                    if (overwrite) {
+                        List<Budget> toInsertBudgets = new ArrayList<>();
+                        for (Budget b : budgets) {
+                            if (b != null && b.getCategory() != null) {
+                                toInsertBudgets.add(new Budget(b.getCategory(), b.getAmount(), b.getMonthYear(), b.isShowDailyBudget()));
+                            }
+                        }
+                        budgetDao.insertAll(toInsertBudgets);
+                        bCount = toInsertBudgets.size();
+                    } else {
+                        // Merge: update existing category budget if already exists for that month, else insert
+                        for (Budget b : budgets) {
+                            if (b != null && b.getCategory() != null) {
+                                String cat = b.getCategory().trim();
+                                String mYear = b.getMonthYear() != null ? b.getMonthYear() : Budget.DEFAULT_MONTHLY;
+                                Budget existing = budgetDao.getBudgetByCategoryAndExactMonthSync(cat, mYear);
+                                if (existing != null) {
+                                    existing.setAmount(b.getAmount());
+                                    existing.setShowDailyBudget(b.isShowDailyBudget());
+                                    existing.setLastModified(System.currentTimeMillis());
+                                    budgetDao.update(existing);
+                                } else {
+                                    Budget newB = new Budget(cat, b.getAmount(), mYear, b.isShowDailyBudget());
+                                    newB.setLastModified(System.currentTimeMillis());
+                                    budgetDao.insert(newB);
+                                }
+                                bCount++;
+                            }
+                        }
                     }
-                    budgetDao.insertAll(toInsertBudgets);
                 }
 
-                int transCount = transactions != null ? transactions.size() : 0;
-                int bCount = budgets != null ? budgets.size() : 0;
                 ImportResult result = new ImportResult(transCount, bCount);
+                mainHandler.post(() -> {
+                    if (callback != null) callback.onSuccess(result);
+                });
+            } catch (Exception e) {
+                mainHandler.post(() -> {
+                    if (callback != null) callback.onError(e);
+                });
+            }
+        });
+    }
 
+    public void copyBudgetsFromMonth(String sourceMonthYear, String targetMonthYear, RepositoryCallback<Integer> callback) {
+        executorService.execute(() -> {
+            try {
+                List<Budget> sourceBudgets = budgetDao.getBudgetsForMonthSync(sourceMonthYear);
+                if (sourceBudgets == null || sourceBudgets.isEmpty()) {
+                    mainHandler.post(() -> {
+                        if (callback != null) callback.onSuccess(0);
+                    });
+                    return;
+                }
+
+                int copiedCount = 0;
+                for (Budget b : sourceBudgets) {
+                    if (b != null && b.getCategory() != null) {
+                        Budget existing = budgetDao.getBudgetByCategoryAndExactMonthSync(b.getCategory(), targetMonthYear);
+                        if (existing != null) {
+                            existing.setAmount(b.getAmount());
+                            existing.setShowDailyBudget(b.isShowDailyBudget());
+                            existing.setLastModified(System.currentTimeMillis());
+                            budgetDao.update(existing);
+                        } else {
+                            Budget newB = new Budget(b.getCategory(), b.getAmount(), targetMonthYear, b.isShowDailyBudget());
+                            newB.setLastModified(System.currentTimeMillis());
+                            budgetDao.insert(newB);
+                        }
+                        copiedCount++;
+                    }
+                }
+
+                final int result = copiedCount;
                 mainHandler.post(() -> {
                     if (callback != null) callback.onSuccess(result);
                 });

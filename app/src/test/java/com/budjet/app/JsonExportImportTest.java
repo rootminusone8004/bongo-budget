@@ -113,4 +113,57 @@ public class JsonExportImportTest {
         assertEquals(300.0, dining.getAmount(), 0.001);
         assertTrue(dining.isShowDailyBudget());
     }
+
+    @Test
+    public void testBudgetsOnlyMappingToTargetMonth() {
+        String json = "{\n" +
+                "  \"appName\": \"Bongo Budget\",\n" +
+                "  \"version\": 1,\n" +
+                "  \"exportDate\": \"2026-10-15T12:00:00Z\",\n" +
+                "  \"budgets\": [\n" +
+                "    {\n" +
+                "      \"category\": \"OVERALL\",\n" +
+                "      \"amount\": 3500.0,\n" +
+                "      \"monthYear\": \"2026-10\",\n" +
+                "      \"showDailyBudget\": true\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"category\": \"Groceries\",\n" +
+                "      \"amount\": 600.0,\n" +
+                "      \"monthYear\": \"2026-10\",\n" +
+                "      \"showDailyBudget\": false\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"transactions\": [\n" +
+                "    {\n" +
+                "      \"title\": \"Old Expense\",\n" +
+                "      \"amount\": 50.0,\n" +
+                "      \"type\": \"EXPENSE\",\n" +
+                "      \"category\": \"Groceries\",\n" +
+                "      \"date\": 1789123500000\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        ExportData data = JsonUtils.fromJsonString(json);
+        assertNotNull(data);
+        assertEquals(2, data.getBudgets().size());
+        assertEquals(1, data.getTransactions().size());
+
+        // Simulate Budgets-Only target month allocation (e.g. November 2026)
+        String targetMonth = "2026-11";
+        List<Budget> allocatedBudgets = new ArrayList<>();
+        for (Budget b : data.getBudgets()) {
+            allocatedBudgets.add(new Budget(b.getCategory(), b.getAmount(), targetMonth, b.isShowDailyBudget()));
+        }
+
+        assertEquals(2, allocatedBudgets.size());
+        assertEquals("OVERALL", allocatedBudgets.get(0).getCategory());
+        assertEquals("2026-11", allocatedBudgets.get(0).getMonthYear());
+        assertTrue(allocatedBudgets.get(0).isShowDailyBudget());
+
+        assertEquals("Groceries", allocatedBudgets.get(1).getCategory());
+        assertEquals("2026-11", allocatedBudgets.get(1).getMonthYear());
+        org.junit.Assert.assertFalse(allocatedBudgets.get(1).isShowDailyBudget());
+    }
 }

@@ -385,6 +385,16 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_copy_previous_month"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/copy_previous_month_budgets"
+                app:icon="@drawable/ic_content_copy"
+                app:iconSize="18dp" />
+
         </LinearLayout>
 
     </LinearLayout>

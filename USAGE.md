@@ -46,6 +46,8 @@ Here you manage your monthly spending discipline and category quotas:
     - Custom categories automatically receive smart icons and color palettes based on keyword matching (e.g., *Gym*, *Gaming*, *Health*, *Books*).
   - **Edit or Delete a Budget Quota**:
     - Tap the edit or delete icon on any category card to modify its monthly quota or remove the quota.
+  - **Copy Budgets from Previous Month**:
+    - When starting a new month with no category budgets set, tap **Copy Budgets from Previous Month** in the empty state to instantly duplicate the overall budget and all category quotas from the preceding month.
 
 ### Backup & Settings Page
 Manage your offline data with complete privacy:
